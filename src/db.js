@@ -1,24 +1,17 @@
 // src/db.js — Instância do Dexie.js (IndexedDB Local)
-// Camada de persistência local para o padrão Offline-First.
-// Garante que nenhuma bipagem seja perdida em caso de falha de rede.
+// Camada de persistência local para o padrão Offline-First (ALMOX Universal).
 import Dexie from 'dexie';
 
-const db = new Dexie('InventarioBobinasDB');
+const db = new Dexie('InventarioAlmoxDB');
 
 /**
- * Schema v1 do banco local.
- *
- * Tabela `leituras_pendentes`:
- *   Fila de sincronização. Toda leitura passa por aqui antes de ir ao Supabase.
- *   Colunas indexadas:
- *     ++id        — chave primária auto-incrementada
- *     _status     — 'pendente' | 'sincronizado' | 'erro'  (para queries de fila)
- *     sessao_id   — para agrupar por sessão
- *     lote        — para evitar duplicatas locais
- *     _criado_em  — timestamp para ordenação cronológica
+ * Schema v2 do banco local ALMOX:
+ * - leituras_pendentes: Fila de sincronização offline de contagens de materiais.
+ * - itens_sap_cache: Cache local da base SAP "ETIQUETAS" importada.
  */
-db.version(1).stores({
-  leituras_pendentes: '++id, _status, sessao_id, lote, _criado_em',
+db.version(2).stores({
+  leituras_pendentes: '++id, _status, sessao_id, material, endereco, deposito, quantidade_fisica, _criado_em',
+  itens_sap_cache: '++id, sessao_id, material, texto_breve, endereco, deposito, quantidade_sap',
 });
 
 export default db;
