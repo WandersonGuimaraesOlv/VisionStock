@@ -1,4 +1,9 @@
-# 📦 Inventário de Bobinas — Videplast
+# 📦 VisionStock — Inventário Universal de Almoxarifado
+
+> **Versão 3 (ALMOX universal):** código organizado em módulos (`src/modules/*`, `backend/app/*`) e hospedagem própria com Docker Compose.
+> Estrutura atual e regras: [`AGENTS.md`](AGENTS.md) · Hospedagem no servidor Linux: [`docs/DEPLOY-LINUX.md`](docs/DEPLOY-LINUX.md) · Testes: `npm test` e `cd backend && pytest`.
+> Partes deste README ainda descrevem a versão de bobinas (Render + túnel Cloudflare) e serão revisadas.
+
 
 <div align="center">
 

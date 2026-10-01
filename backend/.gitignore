@@ -29,4 +29,4 @@ backend/venv/
 backend/env/
 backend/__pycache__/
 backend/*.pyc
-backend/temp_*
+backend/temp_*.pytest_cache/
