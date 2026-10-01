@@ -1026,3 +1026,123 @@ textarea.vp-input {
 .max-width-md { max-width: 960px; margin-left: auto; margin-right: auto; }
 .max-width-xs { max-width: 320px; }
 .w-48 { width: 48%; }
+
+/* =========================================
+   VISIONSTOCK — componentes no padrão Videplast
+========================================= */
+.vp-login-wrapper {
+  min-height: calc(100vh - 160px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem 0 3rem;
+}
+
+.vp-login-card {
+  max-width: 400px;
+  border-radius: var(--vp-radius-lg);
+  overflow: hidden;
+}
+
+.vp-login-faixa {
+  height: 6px;
+  width: 100%;
+  background-color: var(--vp-primary);
+}
+
+.vp-login-campo {
+  display: flex;
+  align-items: center;
+  height: 54px;
+  background: #fff;
+  border: 1px solid #ced4da;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: var(--vp-shadow-sm);
+  transition: border-color 0.2s ease;
+}
+
+.vp-login-campo:focus-within {
+  border-color: var(--vp-primary);
+}
+
+.vp-login-campo i {
+  width: 48px;
+  text-align: center;
+  color: var(--vp-gray);
+}
+
+.vp-login-campo input {
+  flex: 1;
+  height: 100%;
+  border: 0;
+  outline: none;
+  background: transparent;
+  font-size: 1.05rem;
+  font-weight: 600;
+  letter-spacing: 1px;
+}
+
+.vp-topo-status {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 0.75rem;
+}
+
+.vp-passo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--vp-primary);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.85rem;
+  margin-right: 0.5rem;
+}
+
+.vp-modal-coleta {
+  border-top: 6px solid var(--vp-primary) !important;
+}
+
+.vp-qtd-input {
+  font-family: var(--vp-mono);
+  font-size: 2rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.vp-leitura-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--vp-border);
+  border-radius: var(--vp-radius-sm);
+  background: var(--vp-surface);
+  margin-bottom: 0.5rem;
+}
+
+.vp-qtd-badge {
+  background: rgba(226, 9, 9, 0.08);
+  color: var(--vp-primary);
+  border-radius: 999px;
+  padding: 0.25rem 0.75rem;
+  font-weight: 700;
+  font-family: var(--vp-mono);
+}
+
+.table-vp thead th {
+  background: var(--vp-dark) !important;
+  color: #fff !important;
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+@media (min-width: 576px) {
+  .w-sm-auto { width: auto !important; }
+}

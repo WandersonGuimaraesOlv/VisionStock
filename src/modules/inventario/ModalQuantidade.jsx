@@ -27,14 +27,14 @@ const ModalQuantidade = ({ coleta, restantes, aoConfirmar, aoCancelar }) => {
   };
 
   return (
-    <div className="modal fade show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.7)', zIndex: 1070 }}>
+    <div className="modal fade show d-block vp-modal-overlay" tabIndex="-1" style={{ zIndex: 1070 }}>
       <div className="modal-dialog modal-dialog-centered">
-        <div className="modal-content shadow-lg border-2 border-danger">
-          <div className="modal-header bg-danger text-white">
+        <div className="modal-content vp-modal-coleta">
+          <div className="modal-header">
             <h5 className="modal-title fw-bold d-flex align-items-center gap-2">
-              📦 Confirmar Quantidade Física
+              <i className="bi bi-box-seam text-danger"></i> Confirmar Quantidade Física
             </h5>
-            <button type="button" className="btn-close btn-close-white" onClick={aoCancelar}></button>
+            <button type="button" className="btn-close" onClick={aoCancelar}></button>
           </div>
           <div className="modal-body py-3">
             {restantes > 0 && (
@@ -43,14 +43,14 @@ const ModalQuantidade = ({ coleta, restantes, aoConfirmar, aoCancelar }) => {
 
             {!coleta.itemEncontrado && (
               <div className="alert alert-danger d-flex align-items-center gap-2 mb-3">
-                <span className="fs-3">❓</span>
+                <i className="bi bi-question-circle fs-3"></i>
                 <strong className="text-dark">Material não consta na base SAP importada (será registrado como Sobra).</strong>
               </div>
             )}
 
             {coleta.localIncorreto && (
               <div className="alert alert-warning border-warning d-flex align-items-center gap-2 mb-3">
-                <span className="fs-3">⚠️</span>
+                <i className="bi bi-exclamation-triangle-fill fs-3 text-warning"></i>
                 <div>
                   <strong className="d-block text-dark">Alerta: Local Divergente do SAP!</strong>
                   <small className="text-muted">
@@ -60,21 +60,21 @@ const ModalQuantidade = ({ coleta, restantes, aoConfirmar, aoCancelar }) => {
               </div>
             )}
 
-            <div className="p-3 bg-light rounded border mb-3">
-              <div className="small text-uppercase text-secondary fw-bold">Material (SKU)</div>
-              <div className="fs-4 fw-bold text-dark font-monospace">{coleta.material}</div>
+            <div className="p-3 rounded border mb-3" style={{ background: 'var(--vp-surface-alt)' }}>
+              <span className="vp-micro-label m-0">Material (SKU)</span>
+              <div className="fs-4 fw-bold text-dark vp-mono">{coleta.material}</div>
               <div className="fw-medium text-secondary mt-1">{coleta.texto_breve}</div>
             </div>
 
             <div className="form-group mb-3">
-              <label className="form-label fw-bold text-dark fs-6">
-                Quantidade Física Contada:
+              <label className="form-label small fw-bold text-secondary mb-1">
+                Quantidade física contada
               </label>
               <input
                 ref={inputRef}
                 type="text"
                 inputMode="decimal"
-                className="form-control form-control-lg text-center fw-bold fs-3 border-danger"
+                className="vp-input vp-input-lg vp-input-destaque vp-qtd-input w-100"
                 value={quantidade}
                 onChange={(e) => setQuantidade(e.target.value)}
                 onKeyDown={(e) => {
@@ -86,12 +86,12 @@ const ModalQuantidade = ({ coleta, restantes, aoConfirmar, aoCancelar }) => {
               />
             </div>
           </div>
-          <div className="modal-footer bg-light">
-            <button className="btn btn-outline-secondary w-48" onClick={aoCancelar}>
+          <div className="modal-footer border-0 pb-4 d-flex flex-nowrap gap-2">
+            <button className="vp-btn vp-btn-outline vp-btn-lg w-50" onClick={aoCancelar}>
               {restantes > 0 ? 'Pular' : 'Cancelar'}
             </button>
-            <button className="btn btn-danger fw-bold fs-5 w-48 py-2" onClick={confirmar} disabled={salvando}>
-              ✓ Salvar Item
+            <button className="vp-btn vp-btn-primary vp-btn-lg w-50 shadow-sm" onClick={confirmar} disabled={salvando}>
+              <i className="bi bi-check-lg"></i> Salvar Item
             </button>
           </div>
         </div>

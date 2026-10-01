@@ -1,16 +1,24 @@
-// src/modules/auth/BarraOperador.jsx — Barra com o operador logado e navegação principal.
+// src/modules/auth/BarraOperador.jsx — Cartão do operador logado e navegação principal.
+import { obterIniciais } from '../../shared/lib/operador';
+
 const BarraOperador = ({ operador, mostrandoConciliacao, aoAlternarTela, aoSair }) => (
-  <div className="card border-0 bg-dark text-white p-3 mb-3 d-flex flex-row align-items-center justify-content-between shadow-sm">
-    <div>
-      <small className="text-secondary d-block text-uppercase fw-bold" style={{ fontSize: '0.7rem' }}>Operador Logado</small>
-      <strong className="fs-6 text-light">{operador.nome} ({operador.cracha})</strong>
+  <div className="vp-operator-card mb-4">
+    <div className="vp-operator-info">
+      <div className="vp-operator-avatar">{obterIniciais(operador.nome)}</div>
+      <div>
+        <span className="vp-micro-label" style={{ margin: 0 }}>Operador Logado</span>
+        <h4 className="vp-operator-name">{operador.nome}</h4>
+        <span className="vp-operator-badge"><i className="bi bi-person-badge"></i> {operador.cracha}</span>
+      </div>
     </div>
-    <div className="d-flex gap-2">
-      <button className="btn btn-outline-light btn-sm" onClick={aoAlternarTela}>
-        {mostrandoConciliacao ? '📋 Contagem' : '📊 Painel Conciliação'}
+    <div className="vp-operator-actions">
+      <button className="vp-btn vp-btn-outline" onClick={aoAlternarTela}>
+        {mostrandoConciliacao
+          ? <><i className="bi bi-upc-scan"></i> Contagem</>
+          : <><i className="bi bi-list-check"></i> Conciliação</>}
       </button>
-      <button className="btn btn-outline-danger btn-sm" onClick={aoSair}>
-        Sair
+      <button className="vp-btn vp-btn-ghost-danger" onClick={aoSair}>
+        <i className="bi bi-box-arrow-right"></i> Sair
       </button>
     </div>
   </div>

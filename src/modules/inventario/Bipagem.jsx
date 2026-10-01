@@ -23,16 +23,17 @@ const Bipagem = ({ deposito, endereco, leituras, bloqueado, aoLerCodigos, aoAlte
   };
 
   return (
-    <div>
-      <div className="d-flex justify-content-between align-items-center mb-3">
+    <div className="vp-card no-hover" style={{ margin: 0 }}>
+      <div className="d-flex justify-content-between align-items-start mb-3 gap-2">
         <div>
-          <h4 className="fw-bold m-0">3. Bipagem de Materiais</h4>
+          <span className="vp-micro-label m-0">Leitura Ativa</span>
+          <h3 className="vp-title mb-1">Bipagem de Materiais</h3>
           <small className="text-muted">
-            Local: <strong>{deposito || 'Geral'}</strong> | {endereco ? `Endereço: ${endereco}` : 'Sem Endereço'}
+            <i className="bi bi-geo-alt me-1"></i>Depósito <strong>{deposito || 'Geral'}</strong>{endereco ? <> · Endereço <strong>{endereco}</strong></> : ' · sem endereço'}
           </small>
         </div>
-        <button className="btn btn-sm btn-outline-secondary" onClick={aoAlterarLocal}>
-          Alterar Local
+        <button className="vp-btn vp-btn-outline vp-btn-sm" onClick={aoAlterarLocal}>
+          <i className="bi bi-pencil"></i> Local
         </button>
       </div>
 
@@ -52,11 +53,11 @@ const Bipagem = ({ deposito, endereco, leituras, bloqueado, aoLerCodigos, aoAlte
 
       {modo === 'teclado' && (
         <div className="my-3">
-          <div className="input-group input-group-lg mb-3">
+          <div className="d-flex gap-2 mb-3">
             <input
               ref={inputRef}
               type="text"
-              className="form-control font-monospace border-danger border-2 fs-4 text-uppercase"
+              className="vp-input vp-input-lg vp-input-destaque flex-grow-1 vp-mono text-uppercase"
               placeholder="Bipe o código do Material (SKU)..."
               value={codigo}
               onChange={(e) => setCodigo(e.target.value)}
@@ -67,17 +68,17 @@ const Bipagem = ({ deposito, endereco, leituras, bloqueado, aoLerCodigos, aoAlte
                 }
               }}
             />
-            <button className="btn btn-danger fw-bold px-4" onClick={bipar}>
+            <button className="vp-btn vp-btn-primary vp-btn-lg px-4" onClick={bipar}>
               Bipar
             </button>
           </div>
 
           <div className="d-flex gap-2">
-            <button className="btn btn-outline-dark w-50 py-2 d-flex align-items-center justify-content-center gap-2" onClick={() => setModo('camera')}>
-              📷 Usar Câmera
+            <button className="vp-btn vp-btn-outline w-50" onClick={() => setModo('camera')}>
+              <i className="bi bi-camera"></i> Usar Câmera
             </button>
-            <button className="btn btn-outline-primary w-50 py-2 d-flex align-items-center justify-content-center gap-2" onClick={() => setModo('drone')}>
-              🛸 Vídeo de Drone (IA)
+            <button className="vp-btn vp-btn-outline w-50" onClick={() => setModo('drone')}>
+              <i className="bi bi-camera-video"></i> Vídeo de Drone
             </button>
           </div>
         </div>

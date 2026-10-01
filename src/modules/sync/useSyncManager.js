@@ -18,11 +18,12 @@ export const montarPayload = (leitura) => {
 /**
  * useSyncManager
  *
- * @returns {object} { isOnline, pendingCount, syncNow, ultimoErro }
+ * @returns {object} { isOnline, pendingCount, syncNow, ultimoErro, servidorConfigurado }
  *   - isOnline: boolean — true se o navegador detecta conexão de rede
  *   - pendingCount: number — número de leituras na fila aguardando sincronização
  *   - syncNow: async function — dispara uma sincronização imediata (chamada após cada bipagem)
  *   - ultimoErro: string | null — mensagem do último envio que falhou
+ *   - servidorConfigurado: boolean — false quando o build não tem as chaves do Supabase
  */
 export function useSyncManager() {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
@@ -99,5 +100,5 @@ export function useSyncManager() {
     };
   }, [syncNow, refreshPendingCount]);
 
-  return { isOnline, pendingCount, syncNow, ultimoErro };
+  return { isOnline, pendingCount, syncNow, ultimoErro, servidorConfigurado: !!supabase };
 }

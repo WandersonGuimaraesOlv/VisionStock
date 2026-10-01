@@ -129,7 +129,7 @@ const Scanner = ({ aoLerCodigo, aoCancelar }) => {
         <div className="mt-3 d-flex justify-content-center">
           <button
             className="vp-btn vp-btn-outline w-100 d-flex justify-content-center align-items-center"
-            style={{ borderColor: 'var(--vp-red)', color: 'var(--vp-red)' }}
+            style={{ borderColor: 'var(--vp-primary)', color: 'var(--vp-primary)' }}
             onClick={lidarComCancelar}
           >
             Cancelar Leitura

@@ -1,15 +1,27 @@
 // src/shared/components/StatusRede.jsx — Indicador de rede e da fila offline.
-const StatusRede = ({ isOnline, pendingCount, ultimoErro, aoSincronizar }) => (
-  <div className="d-flex justify-content-between align-items-center mb-3 px-2 gap-2 flex-wrap">
-    <span className={`badge ${isOnline ? 'bg-success' : 'bg-danger'} p-2`}>
-      {isOnline ? '🌐 Online (Conectado)' : '⚡ Offline (IndexedDB Ativo)'}
-    </span>
-    {pendingCount > 0 && (
-      <button type="button" className="badge bg-warning text-dark p-2 border-0" onClick={aoSincronizar} title={ultimoErro || 'Enviar agora'}>
-        🔄 {pendingCount} leituras pendentes de envio{ultimoErro ? ' (falha no último envio)' : ''}
+const StatusRede = ({ isOnline, servidorConfigurado, pendingCount, ultimoErro, aoSincronizar }) => {
+  if (!isOnline || !servidorConfigurado) {
+    return (
+      <span className="badge vp-badge-offline" title={servidorConfigurado ? 'Sem conexão — leituras salvas no aparelho' : 'Servidor (Supabase) não configurado — leituras salvas no aparelho'}>
+        <span className="vp-badge-dot vp-badge-dot-offline"></span>
+        {servidorConfigurado ? 'Offline' : 'Sem servidor'}{pendingCount > 0 ? ` — ${pendingCount} na fila` : ''}
+      </span>
+    );
+  }
+  if (pendingCount > 0) {
+    return (
+      <button type="button" className="badge vp-badge-syncing border-0" onClick={aoSincronizar} title={ultimoErro || 'Enviar agora'}>
+        <span className="vp-badge-dot vp-badge-dot-syncing"></span>
+        {ultimoErro ? `Falha no envio — ${pendingCount} na fila` : `Sincronizando ${pendingCount}...`}
       </button>
-    )}
-  </div>
-);
+    );
+  }
+  return (
+    <span className="badge vp-badge-online" title="Online — todas as leituras sincronizadas">
+      <span className="vp-badge-dot vp-badge-dot-online"></span>
+      Online
+    </span>
+  );
+};
 
 export default StatusRede;

@@ -90,8 +90,8 @@ const ProcessadorDrone = ({ aoConcluir, aoCancelar }) => {
         const tempoEsperaTotalFormatada = formatarTempo(tempoTotalEspera || 0);
 
         return (
-            <div className="vp-card" style={{ textAlign: 'center', borderColor: 'var(--vp-orange)' }}>
-                <span className="vp-micro-label" style={{ color: 'var(--vp-orange)' }}>Módulo Drone (IA Server)</span>
+            <div className="vp-card" style={{ textAlign: 'center', borderColor: 'var(--vp-primary)' }}>
+                <span className="vp-micro-label" style={{ color: 'var(--vp-primary)' }}>Módulo Drone (IA Server)</span>
                 <h3 className="vp-title text-success mb-2">
                     <i className="bi bi-check-circle-fill me-2"></i>Análise Concluída!
                 </h3>
@@ -111,7 +111,7 @@ const ProcessadorDrone = ({ aoConcluir, aoCancelar }) => {
                         </div>
                     </div>
                     <div className="col-6">
-                        <div className="p-3 border rounded bg-white shadow-sm" style={{ borderLeft: '4px solid var(--vp-orange) !important' }}>
+                        <div className="p-3 border rounded bg-white shadow-sm" style={{ borderLeft: '4px solid var(--vp-primary) !important' }}>
                             <span className="small text-secondary fw-bold d-block mb-1">Processamento IA</span>
                             <span className="fs-5 fw-bold text-dark">{tempoProcessamentoFormatado}</span>
                         </div>
@@ -141,7 +141,7 @@ const ProcessadorDrone = ({ aoConcluir, aoCancelar }) => {
                 <div style={{ display: 'flex', gap: '1rem', width: '100%', maxWidth: '400px', margin: '0 auto' }}>
                     <button 
                         className="vp-btn vp-btn-primary" 
-                        style={{ flex: 1, backgroundColor: 'var(--vp-orange)', border: 'none' }} 
+                        style={{ flex: 1, backgroundColor: 'var(--vp-primary)', border: 'none' }} 
                         onClick={() => aoConcluir(resultado.codigos || [])}
                         disabled={!resultado.codigos?.length}
                     >
@@ -163,9 +163,9 @@ const ProcessadorDrone = ({ aoConcluir, aoCancelar }) => {
     }
 
     return (
-        <div className="vp-card" style={{ textAlign: 'center', borderColor: 'var(--vp-orange)' }}>
+        <div className="vp-card" style={{ textAlign: 'center', borderColor: 'var(--vp-primary)' }}>
             <div className="d-flex justify-content-between align-items-center mb-2">
-                <span className="vp-micro-label m-0" style={{ color: 'var(--vp-orange)' }}>Módulo Drone (IA Server)</span>
+                <span className="vp-micro-label m-0" style={{ color: 'var(--vp-primary)' }}>Módulo Drone (IA Server)</span>
                 <div className="d-flex align-items-center">
                     {statusBackend === 'online' && (
                         <span className="badge bg-success-subtle text-success border border-success rounded-pill px-3 py-1 fw-bold d-inline-flex align-items-center" style={{ fontSize: '0.78rem' }}>
@@ -206,13 +206,13 @@ const ProcessadorDrone = ({ aoConcluir, aoCancelar }) => {
                 <div style={{ padding: '1rem 0' }}>
                     <div className="mb-4">
                         <input type="file" accept="video/*" id="videoDrone" onChange={lidarComUploadVideo} style={{ display: 'none' }} />
-                        <label htmlFor="videoDrone" className="vp-btn vp-btn-outline w-100" style={{ borderColor: 'var(--vp-orange)', color: 'var(--vp-orange)', maxWidth: '320px', margin: '0 auto', display: 'block' }}>
+                        <label htmlFor="videoDrone" className="vp-btn vp-btn-outline w-100" style={{ borderColor: 'var(--vp-primary)', color: 'var(--vp-primary)', maxWidth: '320px', margin: '0 auto', display: 'block' }}>
                             📁 Selecionar Vídeo do Drone
                         </label>
                     </div>
 
                     {/* Caixa informativa com dicas para celular de operadores no galpão */}
-                    <div className="p-3 border rounded text-start bg-light shadow-sm" style={{ maxWidth: '400px', margin: '0 auto 1.5rem auto', borderLeft: '4px solid var(--vp-orange)' }}>
+                    <div className="p-3 border rounded text-start bg-light shadow-sm" style={{ maxWidth: '400px', margin: '0 auto 1.5rem auto', borderLeft: '4px solid var(--vp-primary)' }}>
                         <h6 className="fw-bold text-dark mb-1" style={{ fontSize: '0.85rem' }}>
                             💡 Dica de Performance para Celular:
                         </h6>
@@ -237,7 +237,7 @@ const ProcessadorDrone = ({ aoConcluir, aoCancelar }) => {
                     </div>
 
                     {processando && (
-                        <div style={{ color: 'var(--vp-orange)', fontWeight: 'bold', margin: '1rem 0', fontSize: '0.9rem' }}>
+                        <div style={{ color: 'var(--vp-primary)', fontWeight: 'bold', margin: '1rem 0', fontSize: '0.9rem' }}>
                             <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
                             {status}
                         </div>
@@ -246,7 +246,7 @@ const ProcessadorDrone = ({ aoConcluir, aoCancelar }) => {
                     <div style={{ display: 'flex', gap: '1rem', width: '100%', maxWidth: '400px' }}>
                         {!processando && (
                             <>
-                                <button className="vp-btn vp-btn-primary" style={{ flex: 1, backgroundColor: 'var(--vp-orange)' }} onClick={enviarParaServidor}>
+                                <button className="vp-btn vp-btn-primary" style={{ flex: 1, backgroundColor: 'var(--vp-primary)' }} onClick={enviarParaServidor}>
                                     Enviar para Análise
                                 </button>
                                 <button className="vp-btn vp-btn-outline" style={{ flex: 1 }} onClick={() => setArquivo(null)}>
@@ -270,7 +270,7 @@ const ProcessadorDrone = ({ aoConcluir, aoCancelar }) => {
                 </button>
 
                 {mostrarConfigUrl && (
-                    <div className="p-3 border rounded bg-white shadow-sm mt-2 text-start" style={{ borderColor: 'var(--vp-orange)' }}>
+                    <div className="p-3 border rounded bg-white shadow-sm mt-2 text-start" style={{ borderColor: 'var(--vp-primary)' }}>
                         <label className="form-label small fw-bold text-dark mb-1">
                             🌐 URL do Backend (vazio = mesmo endereço do app):
                         </label>

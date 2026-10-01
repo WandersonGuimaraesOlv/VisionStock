@@ -18,13 +18,19 @@ const BannerAtualizacao = () => {
   };
 
   return (
-    <div className="alert alert-warning d-flex justify-content-between align-items-center mb-3 shadow-sm" role="alert">
-      <div>
-        <strong>Nova versão disponível!</strong> Atualize a aplicação para obter as últimas melhorias.
+    <div className="vp-update-banner">
+      <div className="vp-update-banner-content">
+        <i className="bi bi-cloud-arrow-down-fill me-2 fs-5 text-warning"></i>
+        <span>Nova versão do VisionStock disponível! Deseja aplicar agora?</span>
       </div>
-      <button className="btn btn-sm btn-dark" onClick={atualizar}>
-        Atualizar Agora
-      </button>
+      <div className="vp-update-banner-actions">
+        <button className="vp-btn vp-btn-success btn-sm me-1 px-3" onClick={atualizar}>
+          <i className="bi bi-arrow-clockwise"></i> Atualizar
+        </button>
+        <button className="vp-btn vp-btn-ghost-danger btn-sm px-2" onClick={() => setRegistro(null)}>
+          Depois
+        </button>
+      </div>
     </div>
   );
 };

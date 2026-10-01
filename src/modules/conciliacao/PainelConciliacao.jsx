@@ -49,11 +49,14 @@ const PainelConciliacao = ({ itensSap, leituras, abrirAlerta }) => {
   };
 
   return (
-    <div className="card shadow-sm border-0 p-3 mb-4">
-      <div className="d-flex justify-content-between align-items-center mb-3">
-        <h4 className="fw-bold m-0">📊 Conciliação de Estoque Física vs. SAP</h4>
-        <button className="btn btn-success fw-bold btn-sm d-flex align-items-center gap-1" onClick={exportar}>
-          📥 Exportar Relatório CSV
+    <div className="vp-card no-hover mb-4" style={{ margin: 0 }}>
+      <div className="d-flex justify-content-between align-items-center mb-3 gap-2 flex-wrap">
+        <div>
+          <span className="vp-micro-label m-0">Conferência</span>
+          <h3 className="vp-title m-0">Conciliação Física vs. SAP</h3>
+        </div>
+        <button className="vp-btn vp-btn-success vp-btn-sm" onClick={exportar}>
+          <i className="bi bi-download"></i> Exportar CSV
         </button>
       </div>
 
@@ -77,9 +80,9 @@ const PainelConciliacao = ({ itensSap, leituras, abrirAlerta }) => {
         itemsCount={filtradas.length}
       />
 
-      <div className="table-responsive">
-        <table className="table table-hover table-striped border align-middle text-start" style={{ fontSize: '0.85rem' }}>
-          <thead className="table-dark">
+      <div className="table-responsive vp-table-wrapper mb-3">
+        <table className="table table-hover align-middle text-start table-vp mb-0" style={{ fontSize: '0.85rem' }}>
+          <thead>
             <tr>
               <th>Status</th>
               <th>Material (SKU)</th>
@@ -97,7 +100,7 @@ const PainelConciliacao = ({ itensSap, leituras, abrirAlerta }) => {
             {visiveis.map((item, idx) => (
               <tr key={`${paginaSegura}-${idx}-${item.material}`}>
                 <td><span className={`badge ${CLASSE_STATUS[item.status]}`}>{ROTULO_STATUS[item.status]}</span></td>
-                <td className="fw-bold font-monospace">{item.material}</td>
+                <td className="fw-bold vp-mono">{item.material}</td>
                 <td>{item.texto_breve}</td>
                 <td>{item.deposito_sap}</td>
                 <td>{item.endereco_sap}</td>
@@ -123,12 +126,12 @@ const PainelConciliacao = ({ itensSap, leituras, abrirAlerta }) => {
 
       {totalPaginas > 1 && (
         <div className="d-flex justify-content-between align-items-center gap-2">
-          <button className="btn btn-sm btn-outline-secondary" disabled={paginaSegura <= 1} onClick={() => setPagina(paginaSegura - 1)}>
-            ← Anterior
+          <button className="vp-btn vp-btn-outline vp-btn-sm px-3" disabled={paginaSegura <= 1} onClick={() => setPagina(paginaSegura - 1)}>
+            Anterior
           </button>
-          <small className="text-muted">Página {paginaSegura} de {totalPaginas}</small>
-          <button className="btn btn-sm btn-outline-secondary" disabled={paginaSegura >= totalPaginas} onClick={() => setPagina(paginaSegura + 1)}>
-            Próxima →
+          <small className="text-muted fw-semibold">Página {paginaSegura} de {totalPaginas}</small>
+          <button className="vp-btn vp-btn-outline vp-btn-sm px-3" disabled={paginaSegura >= totalPaginas} onClick={() => setPagina(paginaSegura + 1)}>
+            Próxima
           </button>
         </div>
       )}

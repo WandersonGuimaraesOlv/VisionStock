@@ -15,7 +15,7 @@ import './App.css';
 
 function App() {
   const { dialogo, fechar, abrirAlerta, abrirConfirmacao } = useDialogo();
-  const { isOnline, pendingCount, syncNow, ultimoErro } = useSyncManager();
+  const { isOnline, pendingCount, syncNow, ultimoErro, servidorConfigurado } = useSyncManager();
   const { operador, logado, entrar, sair } = useOperador();
   const inventario = useInventario({ operador, abrirAlerta, aoRegistrar: syncNow });
   const [mostrarConciliacao, setMostrarConciliacao] = useState(false);
@@ -76,10 +76,14 @@ function App() {
   };
 
   return (
-    <div className="container-fluid max-width-md p-2 p-sm-3 text-start">
-      <Header />
+    <div className="container px-3 px-md-0 pt-2 pb-5 text-start" style={{ maxWidth: mostrarConciliacao ? '1100px' : '800px', width: '100%' }}>
+      {logado && <Header />}
       <BannerAtualizacao />
-      <StatusRede isOnline={isOnline} pendingCount={pendingCount} ultimoErro={ultimoErro} aoSincronizar={syncNow} />
+      {logado && (
+        <div className="vp-topo-status">
+          <StatusRede isOnline={isOnline} servidorConfigurado={servidorConfigurado} pendingCount={pendingCount} ultimoErro={ultimoErro} aoSincronizar={syncNow} />
+        </div>
+      )}
 
       <ModalDialogo dialogo={dialogo} aoFechar={fechar} />
 
@@ -107,9 +111,9 @@ function App() {
           {mostrarConciliacao ? (
             <PainelConciliacao itensSap={inventario.itensSap} leituras={inventario.leituras} abrirAlerta={abrirAlerta} />
           ) : (
-            <div className="card shadow-sm border-0 p-3 mb-4">
+            <main>
               {inventario.carregado ? renderizarEtapa() : <div className="text-muted">Carregando dados do aparelho...</div>}
-            </div>
+            </main>
           )}
         </>
       )}

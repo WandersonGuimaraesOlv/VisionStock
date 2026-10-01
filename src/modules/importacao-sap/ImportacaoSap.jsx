@@ -30,38 +30,39 @@ const ImportacaoSap = ({ totalItens, totalLeituras, aoImportar, aoIniciar, aoNov
   };
 
   return (
-    <div>
-      <div className="d-flex justify-content-between align-items-center mb-3">
-        <h4 className="fw-bold m-0">1. Base de Referência (SAP)</h4>
-        <span className="badge bg-secondary">{totalItens} materiais carregados</span>
+    <>
+      <div className="vp-card vp-sap-card no-hover mb-4">
+        <div className="vp-sap-info">
+          <div className="vp-sap-icon"><i className="bi bi-filetype-csv"></i></div>
+          <div>
+            <h3 className="vp-title">Base SAP "ETIQUETAS"</h3>
+            <p className="vp-subtitle">
+              {totalItens > 0 ? `${totalItens} materiais carregados` : 'Material, Texto breve, Endereço, Depósito e Quantidade SAP'}
+            </p>
+          </div>
+        </div>
+        <div className="w-100 w-sm-auto">
+          <input type="file" accept=".csv,.txt,text/csv" className="d-none" ref={fileInputRef} onChange={importar} id="csvUpload" disabled={carregando} />
+          <label htmlFor="csvUpload" className={`vp-btn vp-btn-outline w-100 d-flex justify-content-center align-items-center gap-2 ${carregando ? 'disabled' : ''}`}>
+            {carregando ? <span className="spinner-border spinner-border-sm" role="status"></span> : <i className="bi bi-cloud-upload"></i>}
+            {carregando ? 'Lendo...' : 'Importar Planilha'}
+          </label>
+        </div>
       </div>
 
-      <div className="p-3 bg-light rounded border mb-3">
-        <p className="small text-muted mb-2">
-          Importe a planilha <strong>"ETIQUETAS"</strong> (.CSV) exportada do SAP ERP com as colunas:
-          <code>Material</code>, <code>Texto breve material</code>, <code>Endereço</code>, <code>Depósito</code> e <code>Quantidade SAP</code>.
-        </p>
-        <input
-          type="file"
-          accept=".csv,.txt,text/csv"
-          ref={fileInputRef}
-          className="form-control"
-          onChange={importar}
-          disabled={carregando}
-        />
-        {carregando && <small className="text-muted d-block mt-2">Processando planilha...</small>}
-      </div>
-
-      <button className="btn btn-danger btn-lg w-100 fw-bold shadow-sm py-3" onClick={aoIniciar}>
-        🚀 Iniciar Contagem Física
-      </button>
-
-      {(totalItens > 0 || totalLeituras > 0) && (
-        <button className="btn btn-outline-secondary w-100 mt-2" onClick={aoNovoInventario}>
-          Encerrar inventário e começar um novo
+      <div className="vp-card no-hover text-center mb-4" style={{ margin: 0 }}>
+        <span className="vp-micro-label mb-2 d-block">Contagem física</span>
+        <h2 className="vp-title mb-4">Pronto para a Contagem</h2>
+        <button className="vp-btn vp-btn-primary vp-btn-lg w-100 shadow-sm" onClick={aoIniciar}>
+          <i className="bi bi-upc-scan"></i> Iniciar Contagem Física
         </button>
-      )}
-    </div>
+        {(totalItens > 0 || totalLeituras > 0) && (
+          <button className="vp-btn vp-btn-ghost-danger w-100 mt-2" onClick={aoNovoInventario}>
+            Encerrar inventário e começar um novo
+          </button>
+        )}
+      </div>
+    </>
   );
 };
 
