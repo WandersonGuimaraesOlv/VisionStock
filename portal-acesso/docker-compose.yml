@@ -1,0 +1,20 @@
+# Portal de Acesso: login único e permissões por sistema, aplicadas pelo Nginx do servidor (auth_request).
+# Uso: cp .env.example .env && docker compose up -d --build
+name: acesso
+
+services:
+  acesso:
+    build: .
+    restart: unless-stopped
+    environment:
+      ACESSO_MODO: ${ACESSO_MODO:-observar}
+      ACESSO_SESSAO_HORAS: ${ACESSO_SESSAO_HORAS:-12}
+      ACESSO_COOKIE_SEGURO: ${ACESSO_COOKIE_SEGURO:-0}
+    volumes:
+      - acesso-dados:/dados
+    ports:
+      # Só na máquina local: o Nginx do servidor publica em /acesso/ e consulta /acesso/api/verificar
+      - "127.0.0.1:${ACESSO_PORTA:-8093}:8000"
+
+volumes:
+  acesso-dados:

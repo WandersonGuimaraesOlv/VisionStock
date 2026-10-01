@@ -26,4 +26,13 @@ export default defineConfig([
       'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]', ignoreRestSiblings: true }],
     },
   },
+  {
+    // Páginas do Portal de Acesso: scripts clássicos que compartilham as funções de comum.js
+    files: ['portal-acesso/app/static/**/*.js'],
+    languageOptions: { sourceType: 'script' },
+  },
+  {
+    files: ['portal-acesso/app/static/painel.js'],
+    languageOptions: { globals: { api: 'readonly', el: 'readonly', sair: 'readonly', BASE: 'readonly' } },
+  },
 ])

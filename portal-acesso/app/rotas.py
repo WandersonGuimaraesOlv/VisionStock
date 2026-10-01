@@ -1,0 +1,363 @@
+"""Rotas do Portal de Acesso: login, verificação para o Nginx (auth_request) e painel de administração."""
+import re
+import threading
+import time
+from pathlib import Path
+
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from fastapi.responses import FileResponse, JSONResponse
+from pydantic import BaseModel, Field
+
+from . import banco
+from .config import config
+from .seguranca import TravaLogin, conferir_senha, gerar_hash_senha, hash_token, novo_token, senha_valida
+
+ESTATICOS = Path(__file__).parent / "static"
+SLUG = re.compile(r"^[a-z0-9][a-z0-9-]{0,39}$")
+LOGIN = re.compile(r"^[A-Za-z0-9._@-]{2,60}$")
+
+router = APIRouter(prefix=config.BASE)
+trava = TravaLogin(config.MAX_TENTATIVAS, config.TRAVA_MINUTOS)
+
+
+# ---------- Modelos ----------
+
+class Entrada(BaseModel):
+    usuario: str = Field(max_length=60)
+    senha: str = Field(max_length=200)
+    volta: str = ""
+
+
+class NovoUsuario(BaseModel):
+    usuario: str
+    nome: str = Field(min_length=1, max_length=120)
+    senha: str
+    admin: bool = False
+    sistemas: list[str] = []
+
+
+class AlteraUsuario(BaseModel):
+    nome: str | None = Field(default=None, min_length=1, max_length=120)
+    senha: str | None = None
+    admin: bool | None = None
+    ativo: bool | None = None
+    sistemas: list[str] | None = None
+
+
+class Sistema(BaseModel):
+    slug: str
+    nome: str = Field(min_length=1, max_length=120)
+    caminho: str = Field(min_length=2, max_length=200)
+    ordem: int = 0
+
+
+class TrocaSenha(BaseModel):
+    atual: str
+    nova: str
+
+
+# ---------- Utilitários ----------
+
+def _ip(request: Request) -> str:
+    return request.headers.get("x-real-ip") or (request.client.host if request.client else "?")
+
+
+def _usuario_logado(request: Request, con):
+    token = request.cookies.get(config.COOKIE_NOME)
+    return banco.usuario_da_sessao(con, hash_token(token)) if token else None
+
+
+def volta_segura(volta: str) -> str:
+    """Só aceita caminhos do próprio servidor (evita redirecionar para sites externos)."""
+    volta = (volta or "").strip()
+    if not volta.startswith("/") or volta.startswith("//") or "\\" in volta or volta.startswith(config.BASE + "/entrar"):
+        return "/"
+    return volta
+
+
+def exige_cabecalho(request: Request) -> None:
+    # Formulários de outros sites não conseguem mandar este cabeçalho (proteção contra CSRF)
+    if request.headers.get("x-portal") != "1":
+        raise HTTPException(403, "Requisição sem o cabeçalho do portal.")
+
+
+def exige_login(request: Request):
+    with banco.conexao() as con:
+        usuario = _usuario_logado(request, con)
+    if not usuario:
+        raise HTTPException(401, "Faça login.")
+    return usuario
+
+
+def exige_admin(usuario=Depends(exige_login)):
+    if not usuario["admin"]:
+        raise HTTPException(403, "Apenas administradores.")
+    return usuario
+
+
+# Em modo observar, registra no histórico quem SERIA barrado (uma vez a cada 10 min por pessoa/sistema)
+_ja_registrado: dict[tuple, float] = {}
+_lock_registro = threading.Lock()
+
+
+def _registrar_negado(con, quem: str, sistema: str, motivo: str, uri: str) -> None:
+    chave = (quem, sistema, motivo)
+    with _lock_registro:
+        if time.time() - _ja_registrado.get(chave, 0) < 600:
+            return
+        _ja_registrado[chave] = time.time()
+    tipo = "seria_negado" if config.MODO == "observar" else "negado"
+    banco.registrar(con, quem, tipo, f"{sistema}: {motivo} ({uri[:150]})")
+
+
+# ---------- Verificação usada pelo Nginx (auth_request) ----------
+
+@router.api_route(
+    "/api/verificar/{sistema}", methods=["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"], include_in_schema=False
+)
+def verificar(sistema: str, request: Request):
+    """200 = libera; 401 = sem login (Nginx manda para a tela de login); 403 = sem permissão."""
+    uri = request.headers.get("x-original-uri", "")
+    with banco.conexao() as con:
+        usuario = _usuario_logado(request, con)
+        if usuario is None:
+            codigo, quem, motivo = 401, f"anônimo {_ip(request)}", "sem login"
+        elif not banco.sistema_existe(con, sistema):
+            codigo, quem, motivo = 403, usuario["usuario"], "sistema não cadastrado no portal"
+        elif not banco.pode_acessar(con, usuario, sistema):
+            codigo, quem, motivo = 403, usuario["usuario"], "sem permissão"
+        else:
+            return Response(status_code=200, headers={"X-Usuario": usuario["usuario"]})
+        _registrar_negado(con, quem, sistema, motivo, uri)
+    if config.MODO == "observar":
+        return Response(status_code=200)
+    return Response(status_code=codigo)
+
+
+# ---------- Login / sessão ----------
+
+@router.post("/api/entrar", dependencies=[Depends(exige_cabecalho)])
+def entrar(dados: Entrada, request: Request):
+    chave = f"{_ip(request)}|{dados.usuario.strip().lower()}"
+    if trava.travado(chave):
+        raise HTTPException(429, f"Muitas tentativas. Aguarde {config.TRAVA_MINUTOS} minutos.")
+    with banco.conexao() as con:
+        usuario = banco.buscar_por_login(con, dados.usuario)
+        if not usuario or not usuario["ativo"] or not conferir_senha(dados.senha, usuario["senha_hash"]):
+            trava.erro(chave)
+            banco.registrar(con, dados.usuario.strip()[:60], "login_falhou", _ip(request))
+            raise HTTPException(401, "Usuário ou senha incorretos.")
+        trava.limpar(chave)
+        token = novo_token()
+        banco.criar_sessao(con, hash_token(token), usuario["id"])
+        banco.registrar(con, usuario["usuario"], "login", _ip(request))
+    resposta = JSONResponse({"ok": True, "volta": volta_segura(dados.volta)})
+    resposta.set_cookie(
+        config.COOKIE_NOME, token, max_age=int(config.SESSAO_HORAS * 3600), path="/",
+        httponly=True, samesite="lax", secure=config.COOKIE_SEGURO,
+    )
+    return resposta
+
+
+@router.post("/api/sair", dependencies=[Depends(exige_cabecalho)])
+def sair(request: Request):
+    token = request.cookies.get(config.COOKIE_NOME)
+    if token:
+        with banco.conexao() as con:
+            banco.encerrar_sessao(con, hash_token(token))
+    resposta = JSONResponse({"ok": True})
+    resposta.delete_cookie(config.COOKIE_NOME, path="/")
+    return resposta
+
+
+@router.get("/api/eu")
+def eu(request: Request):
+    with banco.conexao() as con:
+        usuario = _usuario_logado(request, con)
+        sistemas = banco.listar_sistemas(con)
+        if not usuario:
+            return JSONResponse({"detail": "Faça login.", "modo": config.MODO}, status_code=401)
+        dados = banco.buscar_usuario(con, usuario["id"])
+    permitidos = [s for s in sistemas if dados["admin"] or s["slug"] in dados["sistemas"]]
+    return {
+        "usuario": dados["usuario"], "nome": dados["nome"], "admin": dados["admin"], "modo": config.MODO,
+        "sistemas": permitidos, "todos_caminhos": [s["caminho"] for s in sistemas],
+    }
+
+
+@router.post("/api/minha-senha", dependencies=[Depends(exige_cabecalho)])
+def minha_senha(dados: TrocaSenha, usuario=Depends(exige_login)):
+    if not conferir_senha(dados.atual, usuario["senha_hash"]):
+        raise HTTPException(400, "Senha atual incorreta.")
+    if erro := senha_valida(dados.nova):
+        raise HTTPException(400, erro)
+    with banco.conexao() as con:
+        con.execute("UPDATE usuarios SET senha_hash = ? WHERE id = ?", (gerar_hash_senha(dados.nova), usuario["id"]))
+        banco.registrar(con, usuario["usuario"], "trocou_senha")
+    return {"ok": True}
+
+
+# ---------- Administração ----------
+
+@router.get("/api/usuarios")
+def usuarios(_=Depends(exige_admin)):
+    with banco.conexao() as con:
+        return {"usuarios": banco.listar_usuarios(con), "sistemas": banco.listar_sistemas(con)}
+
+
+@router.post("/api/usuarios", dependencies=[Depends(exige_cabecalho)])
+def criar_usuario(dados: NovoUsuario, admin=Depends(exige_admin)):
+    if not LOGIN.match(dados.usuario.strip()):
+        raise HTTPException(400, "Usuário: 2 a 60 caracteres, sem espaços (letras, números, . _ - @).")
+    if erro := senha_valida(dados.senha):
+        raise HTTPException(400, erro)
+    with banco.conexao() as con:
+        if banco.buscar_por_login(con, dados.usuario):
+            raise HTTPException(409, "Já existe um usuário com esse login.")
+        novo_id = banco.criar_usuario(
+            con, dados.usuario, dados.nome, gerar_hash_senha(dados.senha), dados.admin, dados.sistemas
+        )
+        banco.registrar(con, admin["usuario"], "criou_usuario", dados.usuario.strip())
+        return banco.buscar_usuario(con, novo_id)
+
+
+@router.put("/api/usuarios/{usuario_id}", dependencies=[Depends(exige_cabecalho)])
+def alterar_usuario(usuario_id: int, dados: AlteraUsuario, admin=Depends(exige_admin)):
+    with banco.conexao() as con:
+        atual = banco.buscar_usuario(con, usuario_id)
+        if not atual:
+            raise HTTPException(404, "Usuário não encontrado.")
+        perde_admin = atual["admin"] and atual["ativo"] and (dados.admin is False or dados.ativo is False)
+        if perde_admin and banco.admins_ativos(con) <= 1:
+            raise HTTPException(400, "Precisa sobrar pelo menos um administrador ativo.")
+        mudancas = []
+        if dados.nome is not None:
+            con.execute("UPDATE usuarios SET nome = ? WHERE id = ?", (dados.nome.strip(), usuario_id))
+            mudancas.append("nome")
+        if dados.admin is not None:
+            con.execute("UPDATE usuarios SET admin = ? WHERE id = ?", (int(dados.admin), usuario_id))
+            mudancas.append(f"admin={'sim' if dados.admin else 'não'}")
+        if dados.ativo is not None:
+            con.execute("UPDATE usuarios SET ativo = ? WHERE id = ?", (int(dados.ativo), usuario_id))
+            mudancas.append(f"ativo={'sim' if dados.ativo else 'não'}")
+            if not dados.ativo:
+                banco.encerrar_sessoes_do_usuario(con, usuario_id)
+        if dados.senha is not None:
+            if erro := senha_valida(dados.senha):
+                raise HTTPException(400, erro)
+            con.execute("UPDATE usuarios SET senha_hash = ? WHERE id = ?", (gerar_hash_senha(dados.senha), usuario_id))
+            banco.encerrar_sessoes_do_usuario(con, usuario_id)
+            mudancas.append("senha redefinida")
+        if dados.sistemas is not None:
+            banco.definir_sistemas(con, usuario_id, dados.sistemas)
+            mudancas.append("sistemas=" + (",".join(sorted(set(dados.sistemas))) or "nenhum"))
+        if mudancas:
+            banco.registrar(con, admin["usuario"], "alterou_usuario", f"{atual['usuario']}: {'; '.join(mudancas)}")
+        return banco.buscar_usuario(con, usuario_id)
+
+
+@router.delete("/api/usuarios/{usuario_id}", dependencies=[Depends(exige_cabecalho)])
+def excluir_usuario(usuario_id: int, admin=Depends(exige_admin)):
+    with banco.conexao() as con:
+        atual = banco.buscar_usuario(con, usuario_id)
+        if not atual:
+            raise HTTPException(404, "Usuário não encontrado.")
+        if atual["id"] == admin["id"]:
+            raise HTTPException(400, "Você não pode excluir a sua própria conta.")
+        if atual["admin"] and atual["ativo"] and banco.admins_ativos(con) <= 1:
+            raise HTTPException(400, "Precisa sobrar pelo menos um administrador ativo.")
+        con.execute("DELETE FROM usuarios WHERE id = ?", (usuario_id,))
+        banco.registrar(con, admin["usuario"], "excluiu_usuario", atual["usuario"])
+    return {"ok": True}
+
+
+@router.get("/api/sistemas")
+def sistemas(_=Depends(exige_admin)):
+    with banco.conexao() as con:
+        return banco.listar_sistemas(con)
+
+
+def _validar_sistema(dados: Sistema) -> str:
+    if not SLUG.match(dados.slug):
+        raise HTTPException(400, "Código: letras minúsculas, números e hífen (ex.: rateios).")
+    caminho = "/" + dados.caminho.strip().strip("/") + "/"
+    if caminho == "//" or not re.match(r"^/[A-Za-z0-9._~/-]+/$", caminho):
+        raise HTTPException(400, "Caminho inválido (ex.: /rateios/).")
+    return caminho
+
+
+@router.post("/api/sistemas", dependencies=[Depends(exige_cabecalho)])
+def criar_sistema(dados: Sistema, admin=Depends(exige_admin)):
+    caminho = _validar_sistema(dados)
+    with banco.conexao() as con:
+        if banco.sistema_existe(con, dados.slug):
+            raise HTTPException(409, "Já existe um sistema com esse código.")
+        con.execute(
+            "INSERT INTO sistemas (slug, nome, caminho, ordem) VALUES (?, ?, ?, ?)",
+            (dados.slug, dados.nome.strip(), caminho, dados.ordem),
+        )
+        banco.registrar(con, admin["usuario"], "criou_sistema", f"{dados.slug} {caminho}")
+        return banco.listar_sistemas(con)
+
+
+@router.put("/api/sistemas/{slug}", dependencies=[Depends(exige_cabecalho)])
+def alterar_sistema(slug: str, dados: Sistema, admin=Depends(exige_admin)):
+    caminho = _validar_sistema(dados)
+    with banco.conexao() as con:
+        if not banco.sistema_existe(con, slug):
+            raise HTTPException(404, "Sistema não encontrado.")
+        con.execute(
+            "UPDATE sistemas SET nome = ?, caminho = ?, ordem = ? WHERE slug = ?",
+            (dados.nome.strip(), caminho, dados.ordem, slug),
+        )
+        banco.registrar(con, admin["usuario"], "alterou_sistema", f"{slug} {caminho}")
+        return banco.listar_sistemas(con)
+
+
+@router.delete("/api/sistemas/{slug}", dependencies=[Depends(exige_cabecalho)])
+def excluir_sistema(slug: str, admin=Depends(exige_admin)):
+    with banco.conexao() as con:
+        if not banco.sistema_existe(con, slug):
+            raise HTTPException(404, "Sistema não encontrado.")
+        con.execute("DELETE FROM sistemas WHERE slug = ?", (slug,))
+        banco.registrar(con, admin["usuario"], "excluiu_sistema", slug)
+    return {"ok": True}
+
+
+@router.get("/api/eventos")
+def eventos(_=Depends(exige_admin)):
+    with banco.conexao() as con:
+        return banco.listar_eventos(con)
+
+
+@router.get("/api/health", include_in_schema=False)
+def health():
+    return {"status": "online", "modo": config.MODO}
+
+
+# ---------- Páginas ----------
+
+def _pagina(nome: str) -> FileResponse:
+    return FileResponse(ESTATICOS / nome, headers={"Cache-Control": "no-cache"})
+
+
+@router.get("/", include_in_schema=False)
+def painel():
+    return _pagina("painel.html")
+
+
+@router.get("/entrar", include_in_schema=False)
+def pagina_entrar():
+    return _pagina("entrar.html")
+
+
+@router.get("/sem-acesso", include_in_schema=False)
+def pagina_sem_acesso():
+    return _pagina("sem-acesso.html")
+
+
+@router.get("/{arquivo}", include_in_schema=False)
+def estatico(arquivo: str):
+    if arquivo not in {"estilo.css", "painel.js", "portal.js", "comum.js"}:
+        raise HTTPException(404)
+    return _pagina(arquivo)

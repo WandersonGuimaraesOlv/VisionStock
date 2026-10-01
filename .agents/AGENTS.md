@@ -106,6 +106,7 @@ VisionStock/
 │   ├── main.py                 # Ponto de entrada (uvicorn main:app)
 │   ├── app/                    # config.py, seguranca.py, visao.py (OpenCV/ZXing), rotas.py
 │   └── tests/                  # pytest
+├── portal-acesso/              # Login único + permissões por sistema do servidor (FastAPI + SQLite, Nginx auth_request)
 ├── public/sw.js                # Service Worker (offline do PWA)
 ├── tests/                      # Vitest das regras de negócio
 └── src/

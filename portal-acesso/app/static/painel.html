@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Gestão de Acessos · Portal de Aplicações</title>
+  <link rel="stylesheet" href="/acesso/estilo.css">
+</head>
+<body>
+  <header class="topo">
+    <h1>Gestão de Acessos</h1>
+    <div class="acoes">
+      <span class="suave" id="quem"></span>
+      <a class="botao" href="/">Portal</a>
+      <button type="button" onclick="sair()">Sair</button>
+    </div>
+  </header>
+  <main>
+    <div class="aviso oculto" id="aviso-modo">
+      <strong>Modo observação:</strong> ninguém é bloqueado ainda. Quem seria barrado aparece na aba Histórico.
+      Quando estiver tudo certo, o bloqueio é ligado no servidor.
+    </div>
+
+    <nav class="abas oculto" id="abas" role="tablist">
+      <button type="button" role="tab" data-aba="usuarios" aria-selected="true">Usuários</button>
+      <button type="button" role="tab" data-aba="sistemas">Sistemas</button>
+      <button type="button" role="tab" data-aba="historico">Histórico</button>
+      <button type="button" role="tab" data-aba="conta">Minha senha</button>
+    </nav>
+
+    <!-- Usuários: matriz usuário × sistema -->
+    <section id="aba-usuarios" class="oculto">
+      <div class="cartao">
+        <h2>Quem vê cada sistema</h2>
+        <p class="suave">Marque os sistemas de cada usuário. Salva na hora. Administradores veem todos.</p>
+        <div class="tabela-rolagem"><table id="matriz"></table></div>
+        <div class="erro" id="erro-matriz" role="alert"></div>
+      </div>
+      <form class="cartao" id="form-novo" style="margin-top:16px">
+        <h2>Novo usuário</h2>
+        <div class="grade">
+          <div><label for="novo-usuario">Usuário (login)</label><input id="novo-usuario" type="text" autocapitalize="none" required></div>
+          <div><label for="novo-nome">Nome</label><input id="novo-nome" type="text" required></div>
+          <div><label for="novo-senha">Senha inicial</label><input id="novo-senha" type="password" autocomplete="new-password" minlength="6" required></div>
+        </div>
+        <label>Sistemas</label>
+        <div class="marcas" id="novo-sistemas"></div>
+        <label class="marcas"><span><input type="checkbox" id="novo-admin"> Administrador (vê tudo e gerencia usuários)</span></label>
+        <div class="linha-botoes"><button class="principal" type="submit">Cadastrar</button></div>
+        <div class="erro" id="erro-novo" role="alert"></div>
+      </form>
+    </section>
+
+    <!-- Sistemas -->
+    <section id="aba-sistemas" class="oculto">
+      <div class="cartao">
+        <h2>Sistemas protegidos</h2>
+        <p class="suave">O código é o mesmo usado no Nginx do servidor (ex.: <code>auth_request /_acesso/rateios</code>). O caminho é o endereço do sistema no portal.</p>
+        <div class="tabela-rolagem"><table id="tabela-sistemas"></table></div>
+        <div class="erro" id="erro-sistemas" role="alert"></div>
+      </div>
+      <form class="cartao" id="form-sistema" style="margin-top:16px">
+        <h2>Novo sistema</h2>
+        <div class="grade">
+          <div><label for="sis-slug">Código</label><input id="sis-slug" type="text" placeholder="ex.: compras" required></div>
+          <div><label for="sis-nome">Nome</label><input id="sis-nome" type="text" required></div>
+          <div><label for="sis-caminho">Caminho</label><input id="sis-caminho" type="text" placeholder="/compras/" required></div>
+          <div><label for="sis-ordem">Ordem</label><input id="sis-ordem" type="number" value="10"></div>
+        </div>
+        <div class="linha-botoes"><button class="principal" type="submit">Incluir</button></div>
+        <div class="erro" id="erro-sistema" role="alert"></div>
+      </form>
+    </section>
+
+    <!-- Histórico -->
+    <section id="aba-historico" class="oculto">
+      <div class="cartao">
+        <h2>Histórico</h2>
+        <p class="suave">Logins, alterações e acessos negados (os 300 mais recentes).</p>
+        <div class="tabela-rolagem"><table id="tabela-eventos"></table></div>
+      </div>
+    </section>
+
+    <!-- Conta: também é o que um usuário comum vê -->
+    <section id="aba-conta" class="oculto">
+      <div class="cartao estreito" id="meus-sistemas-cartao" style="margin-bottom:16px">
+        <h2>Seus sistemas</h2>
+        <div class="lista-sistemas" id="meus-sistemas"></div>
+      </div>
+      <form class="cartao estreito" id="form-senha">
+        <h2>Trocar minha senha</h2>
+        <label for="senha-atual">Senha atual</label><input id="senha-atual" type="password" autocomplete="current-password" required>
+        <label for="senha-nova">Nova senha</label><input id="senha-nova" type="password" autocomplete="new-password" minlength="6" required>
+        <button class="principal largo" type="submit">Salvar</button>
+        <div class="erro" id="erro-senha" role="alert"></div>
+      </form>
+    </section>
+  </main>
+  <script src="/acesso/comum.js"></script>
+  <script src="/acesso/painel.js"></script>
+</body>
+</html>

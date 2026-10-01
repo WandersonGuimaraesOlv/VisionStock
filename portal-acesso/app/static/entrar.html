@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Entrar · Portal de Aplicações</title>
+  <link rel="stylesheet" href="/acesso/estilo.css">
+</head>
+<body>
+  <div class="centro">
+    <form id="form" class="cartao estreito" autocomplete="on">
+      <h1>Portal de Aplicações</h1>
+      <p class="suave">Entre com seu usuário para acessar os sistemas.</p>
+      <label for="usuario">Usuário</label>
+      <input id="usuario" type="text" autocomplete="username" autocapitalize="none" required autofocus>
+      <label for="senha">Senha</label>
+      <input id="senha" type="password" autocomplete="current-password" required>
+      <button class="principal largo" type="submit">Entrar</button>
+      <div class="erro" id="erro" role="alert"></div>
+    </form>
+  </div>
+  <script src="/acesso/comum.js"></script>
+  <script>
+    // "volta" é tudo depois de "volta=" (o Nginx manda o endereço original sem codificar)
+    const busca = location.search;
+    const pos = busca.indexOf('volta=');
+    let volta = pos >= 0 ? busca.slice(pos + 6) : '/';
+    try { volta = decodeURIComponent(volta); } catch { /* já estava decodificado */ }
+
+    document.getElementById('form').addEventListener('submit', async (evento) => {
+      evento.preventDefault();
+      const botao = evento.target.querySelector('button');
+      const erro = document.getElementById('erro');
+      botao.disabled = true;
+      erro.textContent = '';
+      try {
+        const r = await api('/api/entrar', { method: 'POST', body: {
+          usuario: document.getElementById('usuario').value,
+          senha: document.getElementById('senha').value,
+          volta,
+        } });
+        location.href = r.volta;
+      } catch (e) {
+        erro.textContent = e.message;
+        botao.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
