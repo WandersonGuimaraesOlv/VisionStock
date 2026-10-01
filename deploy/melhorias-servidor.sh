@@ -40,6 +40,7 @@ fechar() {
   proteger_location /drone-api/ bobinas /tmp/site-melhorias.conf
   sudo cp /tmp/site-melhorias.conf "$SITE"
   recarregar_ou_voltar "$SITE.bak-melhorias"
+  sleep 2  # o reload do Nginx troca os processos aos poucos; testar na hora ainda pega a configuração antiga
   for s in imobilizados bobinas; do
     echo "  $s: $(grep -c "auth_request /_acesso/$s;" "$SITE") bloco(s) com login"
   done
@@ -71,9 +72,8 @@ fechar() {
   fi
 
   echo "== 3/3 Permissão dos .env"
-  for f in /var/www/imobilizados/.env ~/visionstock/.env ~/rateios/.env ~/terceirizados/.env ~/acesso-src/portal-acesso/.env; do
-    [ -f "$f" ] && chmod 600 "$f" && echo "  600 $f"
-  done
+  find /var/www/imobilizados ~/visionstock ~/rateios ~/terceirizados ~/acesso-src/portal-acesso \
+    -maxdepth 3 -name '.env' -not -path '*/node_modules/*' -exec chmod 600 {} \; -printf '  600 %p\n' 2>/dev/null
   curl -s -o /dev/null -w "Conferência: /imobilizados/ %{http_code} (302 = pede login)\n" http://127.0.0.1/imobilizados/
 }
 
