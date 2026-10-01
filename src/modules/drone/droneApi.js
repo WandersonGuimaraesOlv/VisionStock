@@ -5,8 +5,8 @@ const CHAVE_URL_CUSTOM = 'almox_api_url_custom';
 
 export const limparUrl = (url) => (url || '').trim().replace(/\/+$/, '');
 
-/** URL padrão: VITE_API_URL ou o próprio domínio do app (Nginx faz proxy de /api). */
-export const urlPadrao = () => config.apiUrl || '';
+/** URL padrão: VITE_API_URL ou o próprio endereço do app (Nginx faz proxy de <base>/api). */
+export const urlPadrao = () => config.apiUrl || limparUrl(import.meta.env.BASE_URL);
 
 export const lerUrlSalva = () => {
   try {

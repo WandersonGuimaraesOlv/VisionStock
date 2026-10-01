@@ -1,7 +1,10 @@
 // Service Worker do VisionStock (ALMOX) — suporte offline do PWA.
 // Troque a versão quando mudar a estratégia de cache; os arquivos do build já têm hash no nome.
 const CACHE_NAME = 'almox-v3';
-const SHELL = ['/', '/index.html', '/manifest.json', '/favicon.ico', '/pwa-192x192.png', '/pwa-512x512.png'];
+// Caminho onde o app está publicado ("/" ou um subcaminho como "/visionstock/")
+const BASE = new URL(self.registration.scope).pathname;
+const INDEX = `${BASE}index.html`;
+const SHELL = [BASE, INDEX, `${BASE}manifest.json`, `${BASE}favicon.ico`, `${BASE}pwa-192x192.png`, `${BASE}pwa-512x512.png`];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(SHELL)));
@@ -28,21 +31,21 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(request.url);
 
   // Só GET do próprio domínio; API do drone e Supabase vão direto para a rede
-  if (request.method !== 'GET' || url.origin !== self.location.origin || url.pathname.startsWith('/api/')) return;
+  if (request.method !== 'GET' || url.origin !== self.location.origin || url.pathname.startsWith(`${BASE}api/`)) return;
 
   // Navegação: rede primeiro (pega versão nova), cache como reserva offline
   if (request.mode === 'navigate') {
     event.respondWith(
       fetch(request)
-        .then((res) => guardar('/index.html', res))
-        .catch(() => caches.match('/index.html'))
+        .then((res) => guardar(INDEX, res))
+        .catch(() => caches.match(INDEX))
     );
     return;
   }
 
-  // Arquivos do build (/assets/*.js|css com hash): cache primeiro e guarda na primeira visita,
+  // Arquivos do build (assets/*.js|css com hash): cache primeiro e guarda na primeira visita,
   // para o app abrir offline mesmo sem ter sido pré-cacheado na instalação
-  if (url.pathname.startsWith('/assets/')) {
+  if (url.pathname.startsWith(`${BASE}assets/`)) {
     event.respondWith(
       caches.match(request).then((cache) => cache || fetch(request).then((res) => guardar(request, res)))
     );

@@ -11,13 +11,14 @@ services:
         VITE_SUPABASE_ANON_KEY: ${VITE_SUPABASE_ANON_KEY}
         VITE_SUPABASE_TABELA_LEITURAS: ${VITE_SUPABASE_TABELA_LEITURAS:-leituras_almox}
         VITE_API_KEY: ${API_KEY}
+        VITE_BASE_PATH: ${VITE_BASE_PATH:-}
     restart: unless-stopped
     depends_on:
       - api
     ports:
       # Só na máquina local por padrão: o proxy HTTPS do servidor (Nginx/Caddy/Traefik) aponta para cá.
-      # Para expor direto na rede, troque por "${ALMOX_PORTA:-8080}:80".
-      - "127.0.0.1:${ALMOX_PORTA:-8080}:80"
+      # Para expor direto na rede, troque por "${ALMOX_PORTA:-8090}:80".
+      - "127.0.0.1:${ALMOX_PORTA:-8090}:80"
 
   api:
     build: ./backend

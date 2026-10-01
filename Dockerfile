@@ -13,6 +13,8 @@ ARG VITE_SUPABASE_ANON_KEY
 ARG VITE_SUPABASE_TABELA_LEITURAS=leituras_almox
 ARG VITE_API_URL=
 ARG VITE_API_KEY
+# Subcaminho de publicação (ex.: visionstock). Vazio = raiz do domínio
+ARG VITE_BASE_PATH=
 RUN npm run build
 
 FROM nginx:1.27-alpine
