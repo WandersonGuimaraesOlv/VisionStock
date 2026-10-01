@@ -4,6 +4,8 @@
     docker compose exec acesso python -m app.cli redefinir-senha <usuario>
     docker compose exec acesso python -m app.cli listar
     docker compose exec acesso python -m app.cli importar-crachas [sistema1,sistema2]
+    docker compose exec acesso python -m app.cli liberar-para-todos <sistema> [<sistema> ...]
+    docker compose exec acesso python -m app.cli so-marcados <sistema> [<sistema> ...]
 """
 import getpass
 import sys
@@ -70,6 +72,16 @@ def importar(sistemas: list[str]) -> None:
     print(f"IMPORTAÇÃO OK: {resultado['novos']} novos, {resultado['existentes']} já existiam (de {len(crachas)} crachás)")
 
 
+def para_todos(slugs: list[str], aberto: bool) -> None:
+    with banco.conexao() as con:
+        for slug in slugs:
+            if not banco.sistema_existe(con, slug):
+                sys.exit(f"Sistema {slug} não existe. Cadastrados: {', '.join(s['slug'] for s in banco.listar_sistemas(con))}")
+            con.execute("UPDATE sistemas SET aberto = ? WHERE slug = ?", (int(aberto), slug))
+            banco.registrar(con, "terminal", "alterou_sistema", f"{slug} {'(para todos)' if aberto else '(só marcados)'}")
+            print(f"{'LIBERADO PARA TODOS' if aberto else 'SÓ MARCADOS'}: {slug}")
+
+
 def principal(argv: list[str]) -> None:
     banco.iniciar()
     if argv[:1] == ["criar-admin"]:
@@ -78,6 +90,10 @@ def principal(argv: list[str]) -> None:
         redefinir_senha(argv[1])
     elif argv[:1] == ["importar-crachas"] and len(argv) <= 2:
         importar([s for s in (argv[1] if len(argv) == 2 else "").split(",") if s])
+    elif argv[:1] == ["liberar-para-todos"] and len(argv) >= 2:
+        para_todos(argv[1:], True)
+    elif argv[:1] == ["so-marcados"] and len(argv) >= 2:
+        para_todos(argv[1:], False)
     elif argv[:1] == ["listar"]:
         listar()
     else:

@@ -21,7 +21,8 @@ CREATE TABLE IF NOT EXISTS sistemas (
     slug TEXT PRIMARY KEY,
     nome TEXT NOT NULL,
     caminho TEXT NOT NULL,
-    ordem INTEGER NOT NULL DEFAULT 0
+    ordem INTEGER NOT NULL DEFAULT 0,
+    aberto INTEGER NOT NULL DEFAULT 0  -- 1 = qualquer usuário logado pode abrir
 );
 CREATE TABLE IF NOT EXISTS permissoes (
     usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
@@ -75,6 +76,10 @@ def iniciar() -> None:
     with conexao() as con:
         con.execute("PRAGMA journal_mode = WAL")
         con.executescript(ESQUEMA)
+        # Bancos criados antes da opção "liberado para todos"
+        colunas = {r[1] for r in con.execute("PRAGMA table_info(sistemas)")}
+        if "aberto" not in colunas:
+            con.execute("ALTER TABLE sistemas ADD COLUMN aberto INTEGER NOT NULL DEFAULT 0")
         if con.execute("SELECT COUNT(*) FROM sistemas").fetchone()[0] == 0:
             con.executemany("INSERT INTO sistemas (slug, nome, caminho, ordem) VALUES (?, ?, ?, ?)", SISTEMAS_INICIAIS)
 
@@ -156,6 +161,8 @@ def admins_ativos(con) -> int:
 def pode_acessar(con, usuario, sistema: str) -> bool:
     if usuario["admin"]:
         return True
+    if con.execute("SELECT 1 FROM sistemas WHERE slug = ? AND aberto = 1", (sistema,)).fetchone():
+        return True
     return con.execute(
         "SELECT 1 FROM permissoes WHERE usuario_id = ? AND sistema_slug = ?", (usuario["id"], sistema)
     ).fetchone() is not None
@@ -164,7 +171,10 @@ def pode_acessar(con, usuario, sistema: str) -> bool:
 # ---------- Sistemas ----------
 
 def listar_sistemas(con) -> list[dict]:
-    return [dict(r) for r in con.execute("SELECT slug, nome, caminho, ordem FROM sistemas ORDER BY ordem, nome")]
+    return [
+        {**dict(r), "aberto": bool(r["aberto"])}
+        for r in con.execute("SELECT slug, nome, caminho, ordem, aberto FROM sistemas ORDER BY ordem, nome")
+    ]
 
 
 def sistema_existe(con, slug: str) -> bool:

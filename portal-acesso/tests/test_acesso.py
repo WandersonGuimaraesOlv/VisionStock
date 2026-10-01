@@ -185,3 +185,31 @@ def test_importar_sem_supabase_configurado(cria_cliente):
     entrar(c)
     r = c.post("/acesso/api/importar-crachas", json={}, headers=H)
     assert r.status_code == 502 and "Supabase" in r.json()["detail"]
+
+
+def test_sistema_liberado_para_todos(cria_cliente):
+    c = cria_cliente()
+    entrar(c)
+    cria_operador(c, [])
+    r = c.put("/acesso/api/sistemas/bobinas",
+              json={"slug": "bobinas", "nome": "Bobinas", "caminho": "/bobinas/", "aberto": True}, headers=H)
+    assert next(s for s in r.json() if s["slug"] == "bobinas")["aberto"] is True
+    c.cookies.clear()
+    assert c.get("/acesso/api/verificar/bobinas").status_code == 401  # ainda exige login
+    entrar(c, "joao", "senha123")
+    assert c.get("/acesso/api/verificar/bobinas").status_code == 200
+    assert c.get("/acesso/api/verificar/rateios").status_code == 403
+    assert [s["slug"] for s in c.get("/acesso/api/eu").json()["sistemas"]] == ["bobinas"]
+
+
+def test_migra_banco_antigo_sem_coluna_aberto(cria_cliente, tmp_path):
+    import sqlite3
+    from app import banco
+    c = cria_cliente()
+    con = sqlite3.connect(tmp_path / "acesso.db")
+    con.executescript("ALTER TABLE sistemas DROP COLUMN aberto;")
+    con.close()
+    banco.iniciar()
+    with banco.conexao() as con:
+        assert all(s["aberto"] is False for s in banco.listar_sistemas(con))
+    assert entrar(c).status_code == 200

@@ -30,7 +30,8 @@ function desenharMatriz() {
   const tabela = document.getElementById('matriz');
   const cabecalho = el('tr', {},
     el('th', {}, 'Usuário'),
-    sistemas.map((s) => el('th', { class: 'marca', title: s.caminho }, s.nome)),
+    sistemas.map((s) => el('th', { class: 'marca', title: s.caminho }, s.nome,
+      s.aberto ? el('div', { class: 'suave', style: 'font-weight:400' }, 'todos') : null)),
     el('th', { class: 'marca' }, 'Admin'),
     el('th', { class: 'marca' }, 'Ativo'),
     el('th', {}, ''),
@@ -45,9 +46,9 @@ function desenharMatriz() {
     sistemas.map((s) => el('td', { class: 'marca' }, el('input', {
       type: 'checkbox',
       'aria-label': `${u.nome} acessa ${s.nome}`,
-      checked: u.admin || u.sistemas.includes(s.slug),
-      disabled: u.admin,
-      title: u.admin ? 'Administradores veem todos os sistemas' : '',
+      checked: u.admin || s.aberto || u.sistemas.includes(s.slug),
+      disabled: u.admin || s.aberto,
+      title: u.admin ? 'Administradores veem todos os sistemas' : s.aberto ? 'Liberado para todos (aba Sistemas)' : '',
       onchange: (ev) => {
         const lista = new Set(u.sistemas);
         if (ev.target.checked) lista.add(s.slug); else lista.delete(s.slug);
@@ -102,13 +103,15 @@ function desenharSistemas() {
     const nome = el('input', { type: 'text', value: s.nome, 'aria-label': 'Nome' });
     const caminho = el('input', { type: 'text', value: s.caminho, 'aria-label': 'Caminho' });
     const ordem = el('input', { type: 'number', value: s.ordem, 'aria-label': 'Ordem', style: 'max-width:80px' });
+    const aberto = el('input', { type: 'checkbox', checked: s.aberto, 'aria-label': `${s.nome} liberado para todos` });
     return el('tr', {},
       el('td', {}, el('code', {}, s.slug)), el('td', {}, nome), el('td', {}, caminho), el('td', {}, ordem),
+      el('td', { class: 'marca' }, aberto),
       el('td', {}, el('div', { class: 'marcas' },
         el('button', { type: 'button', onclick: async () => {
           try {
             sistemas = await api(`/api/sistemas/${s.slug}`, { method: 'PUT', body: {
-              slug: s.slug, nome: nome.value, caminho: caminho.value, ordem: Number(ordem.value) || 0,
+              slug: s.slug, nome: nome.value, caminho: caminho.value, ordem: Number(ordem.value) || 0, aberto: aberto.checked,
             } });
             mensagem('erro-sistemas', 'Salvo.', true);
             atualizarTudo();
@@ -125,7 +128,7 @@ function desenharSistemas() {
     );
   });
   tabela.replaceChildren(
-    el('thead', {}, el('tr', {}, ['Código', 'Nome', 'Caminho', 'Ordem', ''].map((t) => el('th', {}, t)))),
+    el('thead', {}, el('tr', {}, ['Código', 'Nome', 'Caminho', 'Ordem', 'Para todos', ''].map((t) => el('th', {}, t)))),
     el('tbody', {}, linhas),
   );
 }

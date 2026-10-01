@@ -50,6 +50,7 @@ class Sistema(BaseModel):
     nome: str = Field(min_length=1, max_length=120)
     caminho: str = Field(min_length=2, max_length=200)
     ordem: int = 0
+    aberto: bool = False  # liberado para qualquer usuário logado
 
 
 class PrimeiroAcesso(BaseModel):
@@ -214,7 +215,7 @@ def eu(request: Request):
         if not usuario:
             return JSONResponse({"detail": "Faça login.", "modo": config.MODO}, status_code=401)
         dados = banco.buscar_usuario(con, usuario["id"])
-    permitidos = [s for s in sistemas if dados["admin"] or s["slug"] in dados["sistemas"]]
+    permitidos = [s for s in sistemas if dados["admin"] or s["aberto"] or s["slug"] in dados["sistemas"]]
     return {
         "usuario": dados["usuario"], "nome": dados["nome"], "admin": dados["admin"], "modo": config.MODO,
         "sistemas": permitidos, "todos_caminhos": [s["caminho"] for s in sistemas],
@@ -345,10 +346,10 @@ def criar_sistema(dados: Sistema, admin=Depends(exige_admin)):
         if banco.sistema_existe(con, dados.slug):
             raise HTTPException(409, "Já existe um sistema com esse código.")
         con.execute(
-            "INSERT INTO sistemas (slug, nome, caminho, ordem) VALUES (?, ?, ?, ?)",
-            (dados.slug, dados.nome.strip(), caminho, dados.ordem),
+            "INSERT INTO sistemas (slug, nome, caminho, ordem, aberto) VALUES (?, ?, ?, ?, ?)",
+            (dados.slug, dados.nome.strip(), caminho, dados.ordem, int(dados.aberto)),
         )
-        banco.registrar(con, admin["usuario"], "criou_sistema", f"{dados.slug} {caminho}")
+        banco.registrar(con, admin["usuario"], "criou_sistema", f"{dados.slug} {caminho}{' (para todos)' if dados.aberto else ''}")
         return banco.listar_sistemas(con)
 
 
@@ -359,10 +360,12 @@ def alterar_sistema(slug: str, dados: Sistema, admin=Depends(exige_admin)):
         if not banco.sistema_existe(con, slug):
             raise HTTPException(404, "Sistema não encontrado.")
         con.execute(
-            "UPDATE sistemas SET nome = ?, caminho = ?, ordem = ? WHERE slug = ?",
-            (dados.nome.strip(), caminho, dados.ordem, slug),
+            "UPDATE sistemas SET nome = ?, caminho = ?, ordem = ?, aberto = ? WHERE slug = ?",
+            (dados.nome.strip(), caminho, dados.ordem, int(dados.aberto), slug),
         )
-        banco.registrar(con, admin["usuario"], "alterou_sistema", f"{slug} {caminho}")
+        banco.registrar(
+            con, admin["usuario"], "alterou_sistema", f"{slug} {caminho}{' (para todos)' if dados.aberto else ' (só marcados)'}"
+        )
         return banco.listar_sistemas(con)
 
 
