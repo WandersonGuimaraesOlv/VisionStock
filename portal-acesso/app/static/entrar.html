@@ -11,11 +11,20 @@
     <form id="form" class="cartao estreito" autocomplete="on">
       <h1>Portal de Aplicações</h1>
       <p class="suave">Entre com seu usuário para acessar os sistemas.</p>
-      <label for="usuario">Usuário</label>
+      <label for="usuario">Usuário ou nº do crachá</label>
       <input id="usuario" type="text" autocomplete="username" autocapitalize="none" required autofocus>
-      <label for="senha">Senha</label>
-      <input id="senha" type="password" autocomplete="current-password" required>
-      <button class="principal largo" type="submit">Entrar</button>
+      <div id="bloco-senha">
+        <label for="senha">Senha</label>
+        <input id="senha" type="password" autocomplete="current-password" required>
+      </div>
+      <div id="bloco-nova" class="oculto">
+        <p class="ok" style="margin:12px 0 0">Primeiro acesso: crie a sua senha (mínimo 6 caracteres).</p>
+        <label for="nova">Nova senha</label>
+        <input id="nova" type="password" autocomplete="new-password" minlength="6">
+        <label for="repetir">Repita a senha</label>
+        <input id="repetir" type="password" autocomplete="new-password" minlength="6">
+      </div>
+      <button class="principal largo" type="submit" id="botao">Entrar</button>
       <div class="erro" id="erro" role="alert"></div>
     </form>
   </div>
@@ -27,22 +36,51 @@
     let volta = pos >= 0 ? busca.slice(pos + 6) : '/';
     try { volta = decodeURIComponent(volta); } catch { /* já estava decodificado */ }
 
-    document.getElementById('form').addEventListener('submit', async (evento) => {
+    let criandoSenha = false;
+    const campo = (id) => document.getElementById(id);
+
+    // Crachá importado ainda sem senha: troca o formulário para "criar senha"
+    function modoCriarSenha() {
+      criandoSenha = true;
+      campo('bloco-senha').classList.add('oculto');
+      campo('senha').required = false;
+      campo('bloco-nova').classList.remove('oculto');
+      campo('nova').required = true;
+      campo('repetir').required = true;
+      campo('botao').textContent = 'Salvar senha e entrar';
+      campo('nova').focus();
+    }
+
+    campo('usuario').addEventListener('input', () => {
+      if (!criandoSenha) return;
+      criandoSenha = false;
+      campo('bloco-senha').classList.remove('oculto');
+      campo('senha').required = true;
+      campo('bloco-nova').classList.add('oculto');
+      campo('nova').required = false;
+      campo('repetir').required = false;
+      campo('botao').textContent = 'Entrar';
+    });
+
+    campo('form').addEventListener('submit', async (evento) => {
       evento.preventDefault();
-      const botao = evento.target.querySelector('button');
-      const erro = document.getElementById('erro');
-      botao.disabled = true;
+      const erro = campo('erro');
       erro.textContent = '';
+      if (criandoSenha && campo('nova').value !== campo('repetir').value) {
+        erro.textContent = 'As senhas não conferem.';
+        return;
+      }
+      campo('botao').disabled = true;
       try {
-        const r = await api('/api/entrar', { method: 'POST', body: {
-          usuario: document.getElementById('usuario').value,
-          senha: document.getElementById('senha').value,
-          volta,
-        } });
+        const usuario = campo('usuario').value.trim();
+        const r = criandoSenha
+          ? await api('/api/primeiro-acesso', { method: 'POST', body: { usuario, senha: campo('nova').value, volta } })
+          : await api('/api/entrar', { method: 'POST', body: { usuario, senha: campo('senha').value, volta } });
         location.href = r.volta;
       } catch (e) {
+        campo('botao').disabled = false;
+        if (e.status === 409 && e.dados && e.dados.criar_senha) { erro.textContent = ''; modoCriarSenha(); return; }
         erro.textContent = e.message;
-        botao.disabled = false;
       }
     });
   </script>

@@ -8,6 +8,8 @@ VisionStock, Rateios, Portaria de Terceiros e os que forem incluídos depois).
 - **Proteção no Nginx** (`auth_request`): antes de abrir `/rateios/`, `/visionstock/` etc., o Nginx pergunta
   ao serviço se aquele login pode. Os sistemas não foram alterados e os logins internos deles continuam valendo.
 - **Portal** (`/`): um script esconde os cards que o usuário não pode abrir e mostra quem está logado.
+- **Crachás importados** da base do VisionStock (tabela `crachas` do Supabase): o login é o número do crachá
+  e cada pessoa cria a própria senha no primeiro acesso. O botão "Senha" com o campo vazio faz a pessoa criar outra.
 - **Usuários em SQLite** dentro de um volume Docker: funciona sem internet e não depende do Supabase.
   Senhas com scrypt; sessões guardadas só como hash e derrubadas ao desativar o usuário ou trocar a senha.
 
@@ -24,6 +26,8 @@ VisionStock, Rateios, Portaria de Terceiros e os que forem incluídos depois).
 git clone https://github.com/WandersonGuimaraesOlv/VisionStock.git ~/acesso-src
 bash ~/acesso-src/portal-acesso/deploy/implantar.sh instalar     # serviço na porta 8093 + /acesso/ no Nginx + portal
 bash ~/acesso-src/portal-acesso/deploy/implantar.sh criar-admin  # primeiro administrador
+bash ~/acesso-src/portal-acesso/deploy/implantar.sh importar     # cadastra os crachás do VisionStock (opcional: importar visionstock,bobinas)
+bash ~/acesso-src/portal-acesso/deploy/implantar.sh atualizar    # baixa a versão nova do código
 bash ~/acesso-src/portal-acesso/deploy/implantar.sh proteger     # liga a checagem nos sistemas (ainda observando)
 bash ~/acesso-src/portal-acesso/deploy/implantar.sh bloquear     # passa a barrar
 bash ~/acesso-src/portal-acesso/deploy/implantar.sh observar     # emergência: libera todo mundo de novo

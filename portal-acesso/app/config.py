@@ -19,6 +19,11 @@ class Config:
     MAX_TENTATIVAS: int = int(os.environ.get("ACESSO_MAX_TENTATIVAS", "5"))
     TRAVA_MINUTOS: int = int(os.environ.get("ACESSO_TRAVA_MINUTOS", "5"))
 
+    # Cadastro de crachás no Supabase (o mesmo do VisionStock), usado para importar os usuários
+    SUPABASE_URL: str = os.environ.get("ACESSO_SUPABASE_URL", "").strip().rstrip("/")
+    SUPABASE_CHAVE: str = os.environ.get("ACESSO_SUPABASE_CHAVE", "").strip()
+    TABELA_CRACHAS: str = os.environ.get("ACESSO_TABELA_CRACHAS", "crachas").strip()
+
     def __init__(self) -> None:
         if self.MODO not in MODOS:
             self.MODO = "observar"

@@ -35,8 +35,13 @@ function desenharMatriz() {
     el('th', { class: 'marca' }, 'Ativo'),
     el('th', {}, ''),
   );
-  const linhas = usuarios.map((u) => el('tr', { class: u.ativo ? '' : 'inativo' },
-    el('td', {}, el('strong', {}, u.nome), el('div', { class: 'suave' }, u.usuario)),
+  const filtro = document.getElementById('filtro').value.trim().toLowerCase();
+  const visiveis = filtro
+    ? usuarios.filter((u) => u.nome.toLowerCase().includes(filtro) || u.usuario.toLowerCase().includes(filtro))
+    : usuarios;
+  const linhas = visiveis.map((u) => el('tr', { class: u.ativo ? '' : 'inativo' },
+    el('td', {}, el('strong', {}, u.nome), el('div', { class: 'suave' }, u.usuario,
+      u.senha_pendente ? el('span', { class: 'selo', style: 'margin-left:6px' }, 'sem senha ainda') : null)),
     sistemas.map((s) => el('td', { class: 'marca' }, el('input', {
       type: 'checkbox',
       'aria-label': `${u.nome} acessa ${s.nome}`,
@@ -66,11 +71,12 @@ function desenharMatriz() {
 }
 
 async function redefinirSenha(u) {
-  const senha = prompt(`Nova senha para ${u.nome} (mínimo 6 caracteres):`);
-  if (!senha) return;
+  const senha = prompt(`Nova senha para ${u.nome} (mínimo 6 caracteres).\nDeixe em branco para a pessoa criar uma nova no próximo acesso.`);
+  if (senha === null) return;
   try {
-    await api(`/api/usuarios/${u.id}`, { method: 'PUT', body: { senha } });
-    mensagem('erro-matriz', `Senha de ${u.nome} redefinida.`, true);
+    Object.assign(u, await api(`/api/usuarios/${u.id}`, { method: 'PUT', body: { senha } }));
+    desenharMatriz();
+    mensagem('erro-matriz', senha ? `Senha de ${u.nome} redefinida.` : `${u.nome} vai criar uma nova senha no próximo acesso.`, true);
   } catch (e) { mensagem('erro-matriz', e.message); }
 }
 
@@ -84,8 +90,10 @@ async function excluirUsuario(u) {
 }
 
 function desenharMarcasNovo() {
-  document.getElementById('novo-sistemas').replaceChildren(...sistemas.map((s) =>
-    el('label', {}, el('input', { type: 'checkbox', value: s.slug }), s.nome)));
+  for (const id of ['novo-sistemas', 'importar-sistemas']) {
+    document.getElementById(id).replaceChildren(...sistemas.map((s) =>
+      el('label', {}, el('input', { type: 'checkbox', value: s.slug }), s.nome)));
+  }
 }
 
 function desenharSistemas() {
@@ -166,6 +174,23 @@ document.getElementById('form-novo').addEventListener('submit', async (ev) => {
     desenharMatriz();
     mensagem('erro-novo', `${novo.nome} cadastrado.`, true);
   } catch (e) { mensagem('erro-novo', e.message); }
+});
+
+document.getElementById('filtro').addEventListener('input', desenharMatriz);
+
+document.getElementById('form-importar').addEventListener('submit', async (ev) => {
+  ev.preventDefault();
+  const botao = ev.target.querySelector('button');
+  botao.disabled = true;
+  mensagem('erro-importar', 'Importando...', true);
+  try {
+    const r = await api('/api/importar-crachas', { method: 'POST', body: {
+      sistemas: [...document.querySelectorAll('#importar-sistemas input:checked')].map((c) => c.value),
+    } });
+    await carregar();
+    mensagem('erro-importar', `${r.novos} crachás importados (${r.existentes} já estavam cadastrados).`, true);
+  } catch (e) { mensagem('erro-importar', e.message); }
+  botao.disabled = false;
 });
 
 document.getElementById('form-sistema').addEventListener('submit', async (ev) => {

@@ -99,6 +99,8 @@ def _usuario_dict(con, linha) -> dict:
         "nome": linha["nome"],
         "admin": bool(linha["admin"]),
         "ativo": bool(linha["ativo"]),
+        # Sem senha: a pessoa cria a própria senha no primeiro acesso
+        "senha_pendente": linha["senha_hash"] == "",
         "criado_em": linha["criado_em"],
         "sistemas": sistemas,
     }
@@ -124,6 +126,18 @@ def criar_usuario(con, usuario: str, nome: str, senha_hash: str, admin: bool, si
     )
     definir_sistemas(con, cur.lastrowid, sistemas)
     return cur.lastrowid
+
+
+def importar_crachas(con, crachas: list[tuple[str, str]], sistemas: list[str]) -> dict:
+    """Cria um usuário (login = nº do crachá, sem senha) para cada crachá que ainda não existe."""
+    novos, existentes = 0, 0
+    for cracha, nome in crachas:
+        if buscar_por_login(con, cracha):
+            existentes += 1
+            continue
+        criar_usuario(con, cracha, nome or f"Crachá {cracha}", "", False, sistemas)
+        novos += 1
+    return {"novos": novos, "existentes": existentes}
 
 
 def definir_sistemas(con, usuario_id: int, sistemas: list[str]) -> None:

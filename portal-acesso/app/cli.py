@@ -3,11 +3,13 @@
     docker compose exec acesso python -m app.cli criar-admin
     docker compose exec acesso python -m app.cli redefinir-senha <usuario>
     docker compose exec acesso python -m app.cli listar
+    docker compose exec acesso python -m app.cli importar-crachas [sistema1,sistema2]
 """
 import getpass
 import sys
 
 from . import banco
+from .crachas import ErroCrachas, buscar_crachas
 from .seguranca import gerar_hash_senha, senha_valida
 
 
@@ -57,12 +59,25 @@ def listar() -> None:
             print(f"{u['usuario']:<20} {'ativo' if u['ativo'] else 'INATIVO':<8} {u['nome']:<30} {papel}")
 
 
+def importar(sistemas: list[str]) -> None:
+    try:
+        crachas = buscar_crachas()
+    except ErroCrachas as erro:
+        sys.exit(f"ERRO: {erro}")
+    with banco.conexao() as con:
+        resultado = banco.importar_crachas(con, crachas, sistemas)
+        banco.registrar(con, "terminal", "importou_crachas", f"{resultado['novos']} novos, {resultado['existentes']} já existiam")
+    print(f"IMPORTAÇÃO OK: {resultado['novos']} novos, {resultado['existentes']} já existiam (de {len(crachas)} crachás)")
+
+
 def principal(argv: list[str]) -> None:
     banco.iniciar()
     if argv[:1] == ["criar-admin"]:
         criar_admin()
     elif argv[:1] == ["redefinir-senha"] and len(argv) == 2:
         redefinir_senha(argv[1])
+    elif argv[:1] == ["importar-crachas"] and len(argv) <= 2:
+        importar([s for s in (argv[1] if len(argv) == 2 else "").split(",") if s])
     elif argv[:1] == ["listar"]:
         listar()
     else:

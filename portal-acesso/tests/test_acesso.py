@@ -136,3 +136,52 @@ def test_paginas(cria_cliente):
         assert c.get(caminho).status_code == 200, caminho
     assert c.get("/acesso/main.py").status_code == 404
     assert c.get("/acesso/api/health").json()["status"] == "online"
+
+
+def test_importar_crachas_e_primeiro_acesso(cria_cliente, monkeypatch):
+    c = cria_cliente()
+    import app.rotas
+    monkeypatch.setattr(app.rotas, "buscar_crachas", lambda: [("1234", "Ana Lima"), ("5678", ""), ("admin", "x")])
+    entrar(c)
+    r = c.post("/acesso/api/importar-crachas", json={"sistemas": ["visionstock"]}, headers=H)
+    assert r.json() == {"novos": 2, "existentes": 1}
+    usuarios = {u["usuario"]: u for u in c.get("/acesso/api/usuarios").json()["usuarios"]}
+    assert usuarios["1234"]["senha_pendente"] and usuarios["1234"]["sistemas"] == ["visionstock"]
+    assert usuarios["5678"]["nome"] == "Crachá 5678"
+    assert not usuarios["admin"]["senha_pendente"]
+    # Rodar de novo não duplica
+    assert c.post("/acesso/api/importar-crachas", json={}, headers=H).json() == {"novos": 0, "existentes": 3}
+
+    c.cookies.clear()
+    r = entrar(c, "1234", "")
+    assert r.status_code == 409 and r.json()["criar_senha"] is True
+    assert c.get("/acesso/api/verificar/visionstock").status_code == 401
+    r = c.post("/acesso/api/primeiro-acesso", json={"usuario": "1234", "senha": "abc", "volta": "/visionstock/"}, headers=H)
+    assert r.status_code == 400  # senha curta
+    r = c.post("/acesso/api/primeiro-acesso", json={"usuario": "1234", "senha": "minha123", "volta": "/visionstock/"}, headers=H)
+    assert r.status_code == 200 and r.json()["volta"] == "/visionstock/"
+    assert c.get("/acesso/api/verificar/visionstock").status_code == 200
+    # Depois de criada, ninguém sobrescreve pelo primeiro acesso
+    c.cookies.clear()
+    r = c.post("/acesso/api/primeiro-acesso", json={"usuario": "1234", "senha": "outra123"}, headers=H)
+    assert r.status_code == 400
+    assert entrar(c, "1234", "minha123").status_code == 200
+
+
+def test_admin_zera_senha_e_pessoa_cria_outra(cria_cliente):
+    c = cria_cliente()
+    entrar(c)
+    operador = cria_operador(c, ["rateios"])
+    r = c.put(f"/acesso/api/usuarios/{operador['id']}", json={"senha": ""}, headers=H)
+    assert r.json()["senha_pendente"] is True
+    c.cookies.clear()
+    assert entrar(c, "joao", "senha123").status_code == 409
+    novo = c.post("/acesso/api/usuarios", json={"usuario": "sem", "nome": "Sem Senha"}, headers=H)
+    assert novo.status_code == 401  # sem login de admin
+
+
+def test_importar_sem_supabase_configurado(cria_cliente):
+    c = cria_cliente()
+    entrar(c)
+    r = c.post("/acesso/api/importar-crachas", json={}, headers=H)
+    assert r.status_code == 502 and "Supabase" in r.json()["detail"]

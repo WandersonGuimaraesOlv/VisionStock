@@ -3,6 +3,8 @@
 #
 #   bash implantar.sh instalar      # serviço + /acesso/ no Nginx + barra no portal (não protege nada ainda)
 #   bash implantar.sh criar-admin   # cria o primeiro administrador (pede usuário e senha)
+#   bash implantar.sh atualizar     # baixa a versão nova do código e recria o container
+#   bash implantar.sh importar      # cadastra os crachás do VisionStock (cada um cria a senha no 1º acesso)
 #   bash implantar.sh proteger      # liga a checagem do Nginx nos sistemas (em modo observar ninguém é barrado)
 #   bash implantar.sh bloquear      # passa a barrar quem não tem permissão
 #   bash implantar.sh observar      # volta a só observar (botão de emergência: libera todo mundo)
@@ -11,8 +13,9 @@
 set -euo pipefail
 
 REPO=${REPO:-https://github.com/WandersonGuimaraesOlv/VisionStock.git}
-RAMO=${RAMO:-master}
 FONTE=${FONTE:-$HOME/acesso-src}
+# Sem RAMO informado, continua no ramo que já está baixado (ou master na primeira vez)
+RAMO=${RAMO:-$(git -C "$FONTE" rev-parse --abbrev-ref HEAD 2>/dev/null || echo master)}
 DIR="$FONTE/portal-acesso"
 SITE=${SITE:-/etc/nginx/sites-available/imobilizados}
 PORTAL=${PORTAL:-/var/www/portal/index.html}
@@ -133,6 +136,25 @@ fora_do_ar() {  # Serviço fora do ar: observar libera os sistemas (200); bloque
   recarregar_nginx_ou_voltar "$SITE.bak-acesso-modo"
 }
 
+importar() {
+  cd "$DIR"
+  local origem=${VISIONSTOCK_ENV:-$HOME/visionstock/.env}
+  if ! grep -q '^ACESSO_SUPABASE_CHAVE=.\+' .env; then
+    [ -f "$origem" ] || { echo "ERRO: não achei $origem com as chaves do Supabase"; exit 1; }
+    local url chave
+    url=$(grep '^VITE_SUPABASE_URL=' "$origem" | cut -d= -f2- | tr -d "\"' \r")
+    chave=$(grep '^VITE_SUPABASE_ANON_KEY=' "$origem" | cut -d= -f2- | tr -d "\"' \r")
+    [ -n "$url" ] && [ -n "$chave" ] || { echo "ERRO: VITE_SUPABASE_URL/VITE_SUPABASE_ANON_KEY vazios em $origem"; exit 1; }
+    sed -i '/^ACESSO_SUPABASE_\(URL\|CHAVE\)=/d' .env
+    printf 'ACESSO_SUPABASE_URL=%s\nACESSO_SUPABASE_CHAVE=%s\n' "$url" "$chave" >> .env
+    chmod 600 .env
+    echo "  chaves do Supabase copiadas de $origem"
+  fi
+  docker compose up -d
+  for _ in $(seq 1 15); do curl -fs "http://127.0.0.1:$PORTA/acesso/api/health" >/dev/null && break; sleep 2; done
+  docker compose exec -T acesso python -m app.cli importar-crachas "${1:-}"
+}
+
 desfazer() {
   echo "== Tirando a checagem do Nginx"
   $SUDO cp "$SITE" "$SITE.antes-de-desfazer"
@@ -155,6 +177,8 @@ status() {
 case "${1:-}" in
   instalar) servico; nginx_base; portal; echo "Próximo passo: bash $0 criar-admin" ;;
   criar-admin) cd "$DIR" && docker compose exec acesso python -m app.cli criar-admin ;;
+  atualizar) servico ;;
+  importar) importar "${2:-}" ;;
   proteger) proteger; status ;;
   bloquear) modo bloquear; status ;;
   observar) modo observar ;;

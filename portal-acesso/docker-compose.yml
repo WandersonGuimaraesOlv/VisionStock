@@ -10,6 +10,8 @@ services:
       ACESSO_MODO: ${ACESSO_MODO:-observar}
       ACESSO_SESSAO_HORAS: ${ACESSO_SESSAO_HORAS:-12}
       ACESSO_COOKIE_SEGURO: ${ACESSO_COOKIE_SEGURO:-0}
+      ACESSO_SUPABASE_URL: ${ACESSO_SUPABASE_URL:-}
+      ACESSO_SUPABASE_CHAVE: ${ACESSO_SUPABASE_CHAVE:-}
     volumes:
       - acesso-dados:/dados
     ports:
