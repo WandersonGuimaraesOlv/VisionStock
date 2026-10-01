@@ -6,3 +6,6 @@ temp_*
 *.onnx
 .git
 .gitignore
+tests/
+.pytest_cache/
+requirements-dev.txt

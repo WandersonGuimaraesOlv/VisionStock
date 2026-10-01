@@ -1,51 +1,61 @@
-const CACHE_NAME = 'inv-bobinas-v1';
-const ASSETS = [
-  '/',
-  '/index.html',
-  '/favicon.ico',
-  '/pwa-192x192.png',
-  '/pwa-512x512.png'
-];
+// Service Worker do VisionStock (ALMOX) — suporte offline do PWA.
+// Troque a versão quando mudar a estratégia de cache; os arquivos do build já têm hash no nome.
+const CACHE_NAME = 'almox-v3';
+const SHELL = ['/', '/index.html', '/manifest.json', '/favicon.ico', '/pwa-192x192.png', '/pwa-512x512.png'];
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(ASSETS);
-    })
-  );
+  event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(SHELL)));
 });
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((keys) => {
-      return Promise.all(
-        keys.map((key) => {
-          if (key !== CACHE_NAME) {
-            return caches.delete(key);
-          }
-        })
-      );
-    })
+    caches.keys()
+      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k))))
+      .then(() => self.clients.claim())
   );
-  self.clients.claim();
 });
 
-self.addEventListener('fetch', (event) => {
-  if (event.request.url.startsWith(self.location.origin)) {
-    event.respondWith(
-      caches.match(event.request).then((cachedResponse) => {
-        if (cachedResponse) {
-          fetch(event.request).then((networkResponse) => {
-            if (networkResponse.status === 200) {
-              caches.open(CACHE_NAME).then((cache) => cache.put(event.request, networkResponse));
-            }
-          }).catch(() => {});
-          return cachedResponse;
-        }
-        return fetch(event.request);
-      })
-    );
+const guardar = (request, response) => {
+  if (response && response.ok && response.type === 'basic') {
+    const copia = response.clone();
+    caches.open(CACHE_NAME).then((cache) => cache.put(request, copia));
   }
+  return response;
+};
+
+self.addEventListener('fetch', (event) => {
+  const { request } = event;
+  const url = new URL(request.url);
+
+  // Só GET do próprio domínio; API do drone e Supabase vão direto para a rede
+  if (request.method !== 'GET' || url.origin !== self.location.origin || url.pathname.startsWith('/api/')) return;
+
+  // Navegação: rede primeiro (pega versão nova), cache como reserva offline
+  if (request.mode === 'navigate') {
+    event.respondWith(
+      fetch(request)
+        .then((res) => guardar('/index.html', res))
+        .catch(() => caches.match('/index.html'))
+    );
+    return;
+  }
+
+  // Arquivos do build (/assets/*.js|css com hash): cache primeiro e guarda na primeira visita,
+  // para o app abrir offline mesmo sem ter sido pré-cacheado na instalação
+  if (url.pathname.startsWith('/assets/')) {
+    event.respondWith(
+      caches.match(request).then((cache) => cache || fetch(request).then((res) => guardar(request, res)))
+    );
+    return;
+  }
+
+  // Demais arquivos estáticos: devolve o cache e atualiza em segundo plano
+  event.respondWith(
+    caches.match(request).then((cache) => {
+      const rede = fetch(request).then((res) => guardar(request, res)).catch(() => cache || Response.error());
+      return cache || rede;
+    })
+  );
 });
 
 self.addEventListener('message', (event) => {

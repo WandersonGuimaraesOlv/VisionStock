@@ -93,24 +93,34 @@ O sistema consome planilhas de referência exportadas do SAP ERP no formato CSV/
 ## 📁 Estrutura de Arquivos Principal do Projeto
 
 ```
-inventario-almox/
-├── .agents/
-│   └── AGENTS.md               # Diretrizes do agente no diretório .agents
-├── AGENTS.md                   # Espelho de regras do projeto na raiz do projeto
-├── ARCHITECTURE.md             # Documentação de Arquitetura do Sistema
-├── README.md                   # Guia de instalação e execução
-├── backend/                    # Backend FastAPI Python (Drone & IA)
-│   └── main.py                 # API de visão computacional (ZXing / OpenCV)
-├── public/
-│   └── sw.js                   # Service Worker para suporte PWA offline
-├── src/
-│   ├── App.jsx                 # Orquestrador da aplicação & máquina de estados
-│   ├── components/
-│   │   ├── FilterControls.jsx  # Filtros do painel de conciliação
-│   │   ├── Header.jsx          # Cabeçalho da aplicação
-│   │   ├── ProcessadorDrone.jsx# Modal/Interface de upload de vídeo de drone
-│   │   └── Scanner.jsx         # Leitor QR Code via Câmera (html5-qrcode)
-│   ├── db.js                   # Inicialização Dexie.js (IndexedDB local)
-│   └── supabase.js             # Cliente SDK Supabase (BaaS)
-└── vite.config.js              # Configuração de build Vite
+VisionStock/
+├── .agents/AGENTS.md           # Espelho destas regras
+├── AGENTS.md                   # Regras do projeto (este arquivo)
+├── Dockerfile                  # Build do frontend + Nginx (produção)
+├── docker-compose.yml          # Sobe web (Nginx/PWA) + api (FastAPI drone) no servidor Linux
+├── .env.example                # Variáveis de ambiente (copiar para .env)
+├── deploy/nginx.conf           # Nginx: PWA + proxy de /api para o backend
+├── docs/DEPLOY-LINUX.md        # Passo a passo de hospedagem no servidor
+├── supabase/migrations/        # SQL das tabelas do Supabase (leituras_almox)
+├── backend/                    # Backend FastAPI (Drone & IA)
+│   ├── main.py                 # Ponto de entrada (uvicorn main:app)
+│   ├── app/                    # config.py, seguranca.py, visao.py (OpenCV/ZXing), rotas.py
+│   └── tests/                  # pytest
+├── public/sw.js                # Service Worker (offline do PWA)
+├── tests/                      # Vitest das regras de negócio
+└── src/
+    ├── main.jsx
+    ├── app/                    # App.jsx (orquestrador), estados.js (máquina de estados), config.js (VITE_*)
+    ├── modules/                # Um módulo por funcionalidade, cada um com index.js público
+    │   ├── auth/               # Login por crachá
+    │   ├── importacao-sap/     # Parser da planilha ETIQUETAS
+    │   ├── inventario/         # Seleção de local, bipagem, modal de quantidade (RN-001/002/003)
+    │   ├── conciliacao/        # Motor OK/Falta/Sobra/Local Incorreto (RN-004) + CSV
+    │   ├── drone/              # Upload de vídeo para o backend (RN-006)
+    │   └── sync/               # Fila offline → Supabase (RN-005)
+    └── shared/                 # components/, hooks/, lib/ (Dexie, Supabase, áudio, código, números)
 ```
+
+Regras de modularização:
+- Um módulo só importa outro pelo `index.js` dele; lógica de negócio fica em funções puras testadas em `tests/`.
+- Variáveis de ambiente são lidas só em `src/app/config.js` (frontend) e `backend/app/config.py` (backend).

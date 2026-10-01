@@ -1,11 +1,11 @@
 {
-  "name": "Inventário de Bobinas",
-  "short_name": "Inv. Bobinas",
-  "description": "Sistema de inventário de bobinas Videplast",
+  "name": "VisionStock — Inventário de Almoxarifado",
+  "short_name": "VisionStock",
+  "description": "Contagem física e conciliação de estoque com o SAP",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#ffffff",
+  "theme_color": "#212529",
   "orientation": "portrait",
   "icons": [
     {
