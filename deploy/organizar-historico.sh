@@ -12,7 +12,7 @@ versionar() {  # $1 = pasta  $2 = descrição  $3 = sudo ou vazio
   $s git -C "$d" add -A
   $s git -C "$d" -c user.name="ti" -c user.email="ti@localhost" commit -qm "Estado no servidor em $(date +%d/%m/%Y): $2"
   $s git -C "$d" log --oneline -1
-  $s git -C "$d" ls-files | sed 's/^/  versionado: /' | head -20
+  echo "  arquivos versionados: $($s git -C "$d" ls-files | wc -l)"
 }
 
 versionar ~/terceirizados "Portaria (zip do repositório do Matheus + Dockerfile/compose do servidor)"
