@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Entrar · Portal de Aplicações</title>
+  <link rel="stylesheet" href="/acesso/estilo.css">
+</head>
+<body>
+  <div class="centro">
+    <form id="form" class="cartao estreito" autocomplete="on">
+      <h1>Portal de Aplicações</h1>
+      <p class="suave" id="dica">Digite o número do seu crachá. Se for o seu primeiro acesso, você vai criar uma senha no próximo passo.</p>
+      <label for="usuario">Nº do crachá ou usuário</label>
+      <input id="usuario" type="text" inputmode="text" autocomplete="username" autocapitalize="none" required autofocus>
+      <button type="button" class="link oculto" id="trocar">Não é você? Trocar crachá</button>
+      <div id="bloco-senha" class="oculto">
+        <label for="senha">Senha</label>
+        <input id="senha" type="password" autocomplete="current-password">
+      </div>
+      <div id="bloco-nova" class="oculto">
+        <p class="ok" style="margin:12px 0 0">Primeiro acesso: crie a sua senha (mínimo 6 caracteres). Você vai usar essa senha nas próximas vezes.</p>
+        <label for="nova">Nova senha</label>
+        <input id="nova" type="password" autocomplete="new-password" minlength="6">
+        <label for="repetir">Repita a senha</label>
+        <input id="repetir" type="password" autocomplete="new-password" minlength="6">
+      </div>
+      <button class="principal largo" type="submit" id="botao">Continuar</button>
+      <div class="erro" id="erro" role="alert"></div>
+    </form>
+  </div>
+  <script src="/acesso/comum.js"></script>
+  <script>
+    // "volta" é tudo depois de "volta=" (o Nginx manda o endereço original sem codificar)
+    const busca = location.search;
+    const pos = busca.indexOf('volta=');
+    let volta = pos >= 0 ? busca.slice(pos + 6) : '/';
+    try { volta = decodeURIComponent(volta); } catch { /* já estava decodificado */ }
+
+    // Passos: "cracha" (só o número) → "senha" (quem já tem senha) ou "criar" (primeiro acesso)
+    let passo = 'cracha';
+    const campo = (id) => document.getElementById(id);
+
+    function irPara(novo) {
+      passo = novo;
+      const mostra = (id, sim) => campo(id).classList.toggle('oculto', !sim);
+      mostra('bloco-senha', novo === 'senha');
+      mostra('bloco-nova', novo === 'criar');
+      mostra('trocar', novo !== 'cracha');
+      campo('usuario').readOnly = novo !== 'cracha';
+      campo('senha').required = novo === 'senha';
+      campo('nova').required = campo('repetir').required = novo === 'criar';
+      campo('dica').textContent = {
+        cracha: 'Digite o número do seu crachá. Se for o seu primeiro acesso, você vai criar uma senha no próximo passo.',
+        senha: 'Digite a sua senha.',
+        criar: 'Bem-vindo! Este é o seu primeiro acesso.',
+      }[novo];
+      campo('botao').textContent = { cracha: 'Continuar', senha: 'Entrar', criar: 'Salvar senha e entrar' }[novo];
+      campo('erro').textContent = '';
+      campo({ cracha: 'usuario', senha: 'senha', criar: 'nova' }[novo]).focus();
+    }
+
+    campo('trocar').addEventListener('click', () => {
+      campo('senha').value = campo('nova').value = campo('repetir').value = '';
+      irPara('cracha');
+    });
+
+    campo('form').addEventListener('submit', async (evento) => {
+      evento.preventDefault();
+      const erro = campo('erro');
+      erro.textContent = '';
+      const usuario = campo('usuario').value.trim();
+      if (passo === 'criar' && campo('nova').value !== campo('repetir').value) {
+        erro.textContent = 'As senhas não conferem.';
+        return;
+      }
+      campo('botao').disabled = true;
+      try {
+        if (passo === 'cracha') {
+          const r = await api('/api/identificar', { method: 'POST', body: { usuario } });
+          campo('botao').disabled = false;
+          irPara(r.criar_senha ? 'criar' : 'senha');
+          return;
+        }
+        const r = passo === 'criar'
+          ? await api('/api/primeiro-acesso', { method: 'POST', body: { usuario, senha: campo('nova').value, volta } })
+          : await api('/api/entrar', { method: 'POST', body: { usuario, senha: campo('senha').value, volta } });
+        location.href = r.volta;
+      } catch (e) {
+        campo('botao').disabled = false;
+        if (e.status === 409 && e.dados && e.dados.criar_senha) { irPara('criar'); return; }
+        erro.textContent = e.message;
+      }
+    });
+  </script>
+</body>
+</html>

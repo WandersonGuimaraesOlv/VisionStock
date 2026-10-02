@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sem acesso · Portal de Aplicações</title>
+  <link rel="stylesheet" href="/acesso/estilo.css">
+</head>
+<body>
+  <div class="centro">
+    <div class="cartao estreito">
+      <h1>Sem acesso a este sistema</h1>
+      <p class="suave" id="quem">Seu usuário não tem permissão para abrir esta página. Peça a liberação ao administrador.</p>
+      <div class="linha-botoes">
+        <a class="botao" href="/">Voltar ao portal</a>
+        <button type="button" onclick="sair()">Entrar com outro usuário</button>
+      </div>
+    </div>
+  </div>
+  <script src="/acesso/comum.js"></script>
+  <script>
+    api('/api/eu').then((eu) => {
+      document.getElementById('quem').textContent =
+        `Você entrou como ${eu.nome} (${eu.usuario}) e não tem permissão para abrir esta página. Peça a liberação ao administrador.`;
+    }).catch(() => {});
+  </script>
+</body>
+</html>
