@@ -153,6 +153,9 @@ def test_importar_crachas_e_primeiro_acesso(cria_cliente, monkeypatch):
     assert c.post("/acesso/api/importar-crachas", json={}, headers=H).json() == {"novos": 0, "existentes": 3}
 
     c.cookies.clear()
+    # 1º passo da tela: só o crachá; inexistente responde igual a quem já tem senha
+    ident = lambda u: c.post("/acesso/api/identificar", json={"usuario": u}, headers=H).json()["criar_senha"]
+    assert ident("1234") is True and ident("admin") is False and ident("9999") is False
     r = entrar(c, "1234", "")
     assert r.status_code == 409 and r.json()["criar_senha"] is True
     assert c.get("/acesso/api/verificar/visionstock").status_code == 401
@@ -166,6 +169,7 @@ def test_importar_crachas_e_primeiro_acesso(cria_cliente, monkeypatch):
     r = c.post("/acesso/api/primeiro-acesso", json={"usuario": "1234", "senha": "outra123"}, headers=H)
     assert r.status_code == 400
     assert entrar(c, "1234", "minha123").status_code == 200
+    assert ident("1234") is False
 
 
 def test_admin_zera_senha_e_pessoa_cria_outra(cria_cliente):

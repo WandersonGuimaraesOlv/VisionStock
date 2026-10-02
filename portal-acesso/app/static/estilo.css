@@ -26,6 +26,8 @@ button.principal { background: #238636; border-color: #2ea043; color: #fff; }
 button.perigo { color: var(--vermelho); }
 button.largo { width: 100%; margin-top: 16px; padding: 11px; }
 button:disabled { opacity: .6; cursor: wait; }
+button.link { background: none; border: none; padding: 4px 0; color: var(--azul); font-size: .85rem; cursor: pointer; }
+input[readonly] { opacity: .75; }
 .erro { color: var(--vermelho); min-height: 1.4em; margin-top: 10px; font-size: .9rem; }
 .ok { color: var(--verde); }
 .topo { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid var(--borda); background: var(--cartao); }

@@ -59,6 +59,10 @@ class PrimeiroAcesso(BaseModel):
     volta: str = ""
 
 
+class Identificacao(BaseModel):
+    usuario: str = Field(max_length=60)
+
+
 class Importacao(BaseModel):
     sistemas: list[str] = []
 
@@ -147,6 +151,17 @@ def verificar(sistema: str, request: Request):
 
 
 # ---------- Login / sessão ----------
+
+@router.post("/api/identificar", dependencies=[Depends(exige_cabecalho)])
+def identificar(dados: Identificacao, request: Request):
+    """1º passo da tela de entrar: diz se o crachá ainda precisa criar a senha.
+    Crachá inexistente responde igual a quem já tem senha, para não revelar quem está cadastrado."""
+    if trava.travado(f"{_ip(request)}|{dados.usuario.strip().lower()}"):
+        raise HTTPException(429, f"Muitas tentativas. Aguarde {config.TRAVA_MINUTOS} minutos.")
+    with banco.conexao() as con:
+        usuario = banco.buscar_por_login(con, dados.usuario)
+    return {"criar_senha": bool(usuario and usuario["ativo"] and usuario["senha_hash"] == "")}
+
 
 @router.post("/api/entrar", dependencies=[Depends(exige_cabecalho)])
 def entrar(dados: Entrada, request: Request):
