@@ -10,7 +10,7 @@
   <div class="centro">
     <form id="form" class="cartao estreito" autocomplete="on">
       <h1>Portal de Aplicações</h1>
-      <p class="suave" id="dica">Digite o número do seu crachá para continuar.</p>
+      <p class="suave" id="dica">Digite o número do seu crachá. Se for o seu primeiro acesso, você vai criar uma senha no próximo passo.</p>
       <label for="usuario">Nº do crachá ou usuário</label>
       <input id="usuario" type="text" inputmode="text" autocomplete="username" autocapitalize="none" required autofocus>
       <button type="button" class="link oculto" id="trocar">Não é você? Trocar crachá</button>
@@ -51,7 +51,7 @@
       campo('senha').required = novo === 'senha';
       campo('nova').required = campo('repetir').required = novo === 'criar';
       campo('dica').textContent = {
-        cracha: 'Digite o número do seu crachá para continuar.',
+        cracha: 'Digite o número do seu crachá. Se for o seu primeiro acesso, você vai criar uma senha no próximo passo.',
         senha: 'Digite a sua senha.',
         criar: 'Bem-vindo! Este é o seu primeiro acesso.',
       }[novo];
